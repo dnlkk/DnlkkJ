@@ -15,8 +15,6 @@ import java.util.Map;
 import java.util.Set;
 import com.dnlkk.dependency_injector.annotations.Pea;
 
-import com.dnlkk.dependency_injector.Pea;
-
 public class ComponentFactory {
     private final Map<Class<?>, List<Object>> components = new HashMap<>();
 

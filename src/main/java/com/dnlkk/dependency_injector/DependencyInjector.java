@@ -34,7 +34,7 @@ public class DependencyInjector {
                     e.printStackTrace();
                 }
             }
-            if (field.isAnnotationPresent(AutoInject.class)) {
+            else if (field.isAnnotationPresent(AutoInject.class)) {
                 try {
                     Class<?> fieldType = field.getType();
                     Object dependency = componentFactory.getComponent(fieldType);
