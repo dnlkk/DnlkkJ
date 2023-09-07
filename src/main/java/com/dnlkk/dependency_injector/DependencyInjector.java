@@ -7,6 +7,7 @@ import java.util.Arrays;
 
 import com.dnlkk.dependency_injector.config.ComponentFactory;
 import com.dnlkk.dependency_injector.annotations.ConcreteInject;
+import com.dnlkk.dependency_injector.annotations.lifecycle.Prototype;
 import com.dnlkk.dependency_injector.annotations.AutoInject;
 
 public class DependencyInjector {
@@ -19,12 +20,22 @@ public class DependencyInjector {
     public void inject(Object target) {
         Class<?> targetClass = target.getClass();
         Field[] fields = targetClass.getDeclaredFields();
-
         for (Field field : fields) {
             if (field.isAnnotationPresent(ConcreteInject.class)) {
                 try {
                     Class<?> fieldType = field.getType();
-                    Object dependency = componentFactory.getComponent(fieldType, field.getAnnotation(ConcreteInject.class).className());
+                    Object dependency;
+                    if (field.isAnnotationPresent(Prototype.class)) {
+                        dependency = componentFactory.getPrototype(fieldType);
+                        if (dependency == null)
+                            dependency = componentFactory.getPrototype(fieldType, field.getAnnotation(ConcreteInject.class).injectName());
+                    }
+                    else {
+                        dependency = componentFactory.getSingleton(fieldType, field.getAnnotation(ConcreteInject.class).injectName());
+                        if (dependency == null)
+                            dependency = componentFactory.getSingleton(fieldType);
+                    }
+                    System.out.println(field.getAnnotation(ConcreteInject.class).injectName());
                     if (dependency != null) {
                         field.setAccessible(true);
                         field.set(target, dependency);
@@ -37,7 +48,17 @@ public class DependencyInjector {
             else if (field.isAnnotationPresent(AutoInject.class)) {
                 try {
                     Class<?> fieldType = field.getType();
-                    Object dependency = componentFactory.getComponent(fieldType);
+                    Object dependency;
+                    if (field.isAnnotationPresent(Prototype.class)) {
+                            dependency = componentFactory.getPrototype(fieldType);
+                        if (dependency == null)
+                            dependency = componentFactory.getPrototype(fieldType, field.getName());
+                        }
+                    else{
+                        dependency = componentFactory.getSingleton(fieldType);
+                        if (dependency == null)
+                            dependency = componentFactory.getSingleton(fieldType, fieldType.getName());
+                    }
                     if (dependency != null) {
                         field.setAccessible(true);
                         field.set(target, dependency);

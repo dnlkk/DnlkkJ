@@ -13,17 +13,22 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
 import com.dnlkk.dependency_injector.annotations.Pea;
 
 public class ComponentFactory {
     private final Map<Class<?>, List<Object>> components = new HashMap<>();
+    private Set<Class<?>> configClasses;
+    private final Map<Object, Method[]> methods = new HashMap<>();
 
-    public void scanAndInject(String basePackage) {
-        Set<Class<?>> configClasses = findConfigClasses(basePackage);
+
+    public void scan(String basePackage) {
+        this.configClasses = findConfigClasses(basePackage);
 
         for (Class<?> configClass : configClasses) {
             Object configInstance = createInstance(configClass);
 
+            methods.put(configInstance, configClass.getDeclaredMethods());
             for (Method method : configClass.getDeclaredMethods()) {
                 if (method.isAnnotationPresent(Pea.class)) {
                     Object peaInstance = invokePeaMethod(configInstance, method);
@@ -37,23 +42,66 @@ public class ComponentFactory {
                         list.add(peaInstance);
                         components.put(method.getReturnType(), list);
                     }
+                    System.out.println(method.getReturnType());
+                    System.out.println(components.get(method.getReturnType()));
                 }
             }
         }
     }
 
+    public <T> T getPrototype(Class<T> componentClass, String name) {
+        for (Object configInstance : methods.keySet()) {
+            for (Method method : methods.get(configInstance)) {
+                if (method.getName().equals(name)){
+                    return componentClass.cast(invokePeaMethod(configInstance, method));
+                }
+            }
+        }
+        return null;
+    }
+
+    public <T> T getPrototype(Class<T> componentClass) {
+        for (Object configInstance : methods.keySet()) {
+            for (Method method : methods.get(configInstance)) {
+                if (method.getReturnType().getName().equals(componentClass.getName()))
+                    return componentClass.cast(invokePeaMethod(configInstance, method));
+            }
+        }
+        return null;
+    }
+
     public <T> T getComponent(Class<T> componentClass, String name) {
-        Object[] objArray = components.get(componentClass).stream().filter(obj -> obj.getClass().getSimpleName().equals(name)).toArray();
-        if (objArray.length == 0)
-            return null;
-        return componentClass.cast(objArray[objArray.length - 1]);
+        return getSingleton(componentClass, name);
     }
 
     public <T> T getComponent(Class<T> componentClass) {
+        return getSingleton(componentClass);
+    }
+
+    public <T> T getSingleton(Class<T> componentClass, String name) {
+        Object[] objArray = new Object[0];
+        if (components.get(componentClass) != null)
+        objArray = components.get(componentClass).stream().filter(obj -> {
+            System.out.println(name);
+            System.out.println(obj.getClass().getSimpleName());
+            System.out.println(obj.getClass().getSimpleName().equals(name));
+            return obj.getClass().getSimpleName().equals(name);
+        }).toArray();
+
+        System.out.println(components.get(componentClass));
+        System.out.println(Arrays.toString(objArray));
+        if (objArray.length == 0)
+            return null;
+        Object returnObject = objArray[objArray.length - 1];
+        return componentClass.cast(returnObject);
+    }
+
+    public <T> T getSingleton(Class<T> componentClass) {
         if (!components.containsKey(componentClass))
             return null;
         List<Object> list = components.get(componentClass);
-        return componentClass.cast(list.get(list.size() - 1));
+        Object returnObject = list.get(list.size() - 1);
+        return componentClass.cast(returnObject);
     }
 
     private Set<Class<?>> findConfigClasses(String basePackage) {
@@ -69,7 +117,7 @@ public class ComponentFactory {
                 if (resource.getProtocol().equals("file")) {
                     File packageDir = new File(resource.getFile());
                     File[] files = packageDir.listFiles();
-
+                    // TODO: работать с классами. вытащить из пакета только класса без файлов
                     if (files != null) {
                         for (File file : files) {
                             if (file.isFile() && file.getName().endsWith(".class")) {

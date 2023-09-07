@@ -15,6 +15,11 @@ public class DnlkkConfig {
     public Component dnlkkComponent2() {
         return new DnlkkComponent();
     }
+
+    @Pea
+    public MyComponent myComponentTest() {
+        return new MyComponent();
+    }
         
     @Pea
     public TestComponent testComponent() {
