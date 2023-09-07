@@ -12,23 +12,34 @@ public class DnlkkApp {
     @Prototype
     private Component myComponent;
 
-    @AutoInject
+    @ConcreteInject(injectName = "myComponent")
     @Prototype
     private Component defaultComponent;
 
-    @AutoInject
+    @ConcreteInject(injectName = "myComponent")
     @Prototype
     private Component defaultComponent1;
 
     @AutoInject
     @Prototype
-    private Component defaultComponent2;
+    private Component dnlkkComponent2;
+    
+    @ConcreteInject(injectName = "dnlkkComponent2")
+    @Prototype
+    private Component dnlkkComponent22;
 
     @AutoInject
+    private MyComponent dnlkkComponent2weqwrq;
+    @AutoInject
+    @Singleton
+    private MyComponent dnlkkComponent2weqwrqq;
+
+
+    @ConcreteInject(injectName = "myComponent")
     @Singleton
     private MyComponent defaultComponentSingleton;
 
-    @AutoInject
+    @ConcreteInject(injectName = "myComponent")
     private MyComponent defaultComponentSingleton2;
 
     @ConcreteInject(injectName = "myComponent")
@@ -39,7 +50,7 @@ public class DnlkkApp {
     private Component componentProto;
 
     @AutoInject
-    private DnlkkComponent dnlkkComponent;
+    private DnlkkComponent myComponentTest;
     
     @AutoInject
     private TestComponent testComponent;
@@ -59,8 +70,16 @@ public class DnlkkApp {
         System.out.println(defaultComponent1);
         defaultComponent1.doSomething();
 
-        System.out.println(defaultComponent2);
-        defaultComponent2.doSomething();
+        System.out.println(dnlkkComponent2);
+        dnlkkComponent2.doSomething();
+
+        System.out.println(dnlkkComponent22);
+        dnlkkComponent22.doSomething();
+
+        System.out.println(dnlkkComponent2weqwrq);
+        dnlkkComponent2weqwrq.doSomething();
+        System.out.println(dnlkkComponent2weqwrqq);
+        dnlkkComponent2weqwrqq.doSomething();
 
         System.out.println(defaultComponentSingleton);
         defaultComponentSingleton.doSomething();
@@ -74,7 +93,10 @@ public class DnlkkApp {
         System.out.println(componentProto);
         componentProto.doSomething();
 
-        System.out.println(dnlkkComponent);
-        dnlkkComponent.doSomething();
+        System.out.println(myComponentTest);
+        myComponentTest.doSomething();
+
+        System.out.println(testComponent);
+        System.out.println(testComponent.getText());
     }
 }

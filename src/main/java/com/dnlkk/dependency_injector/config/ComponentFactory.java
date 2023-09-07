@@ -5,9 +5,6 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -17,10 +14,8 @@ import java.util.Set;
 import com.dnlkk.dependency_injector.annotations.Pea;
 
 public class ComponentFactory {
-    private final Map<Class<?>, List<Object>> components = new HashMap<>();
+    private final Map<String, PeaObject> components = new HashMap<>();
     private Set<Class<?>> configClasses;
-    private final Map<Object, Method[]> methods = new HashMap<>();
-
 
     public void scan(String basePackage) {
         this.configClasses = findConfigClasses(basePackage);
@@ -28,80 +23,52 @@ public class ComponentFactory {
         for (Class<?> configClass : configClasses) {
             Object configInstance = createInstance(configClass);
 
-            methods.put(configInstance, configClass.getDeclaredMethods());
             for (Method method : configClass.getDeclaredMethods()) {
                 if (method.isAnnotationPresent(Pea.class)) {
                     Object peaInstance = invokePeaMethod(configInstance, method);
-                    Class<?> methodReturnType = method.getReturnType();
-                    if (components.containsKey(methodReturnType)) {
-                        List<Object> list = components.get(methodReturnType);
-                        list.add(peaInstance);
-                    }
-                    else {
-                        List<Object> list = new ArrayList<>();
-                        list.add(peaInstance);
-                        components.put(method.getReturnType(), list);
-                    }
-                    System.out.println(method.getReturnType());
-                    System.out.println(components.get(method.getReturnType()));
+                    if (components.containsKey(method.getName()))
+                        try {
+                            throw new Exception(String.format("@Pea with the title: '%s' should be presented in only one @Config", method.getName()));
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            System.exit(1);
+                        }
+                    else
+                        components.put(method.getName(), new PeaObject(peaInstance, method, configInstance));
                 }
             }
         }
     }
 
     public <T> T getPrototype(Class<T> componentClass, String name) {
-        for (Object configInstance : methods.keySet()) {
-            for (Method method : methods.get(configInstance)) {
-                if (method.getName().equals(name)){
-                    return componentClass.cast(invokePeaMethod(configInstance, method));
-                }
-            }
+        if (components.containsKey(name)) {
+            PeaObject peaObject = components.get(name);
+            return componentClass.cast(invokePeaMethod(peaObject.getConfigInstance(), peaObject.getInvokeMethod()));
         }
         return null;
     }
 
     public <T> T getPrototype(Class<T> componentClass) {
-        for (Object configInstance : methods.keySet()) {
-            for (Method method : methods.get(configInstance)) {
-                if (method.getReturnType().getName().equals(componentClass.getName()))
-                    return componentClass.cast(invokePeaMethod(configInstance, method));
-            }
+        for (PeaObject peaObject : components.values()) {
+            if (peaObject.getSingleton().getClass() == componentClass) 
+                return componentClass.cast(invokePeaMethod(peaObject.getConfigInstance(), peaObject.getInvokeMethod()));
         }
         return null;
     }
 
-    public <T> T getComponent(Class<T> componentClass, String name) {
-        return getSingleton(componentClass, name);
-    }
-
-    public <T> T getComponent(Class<T> componentClass) {
-        return getSingleton(componentClass);
-    }
-
     public <T> T getSingleton(Class<T> componentClass, String name) {
-        Object[] objArray = new Object[0];
-        if (components.get(componentClass) != null)
-        objArray = components.get(componentClass).stream().filter(obj -> {
-            System.out.println(name);
-            System.out.println(obj.getClass().getSimpleName());
-            System.out.println(obj.getClass().getSimpleName().equals(name));
-            return obj.getClass().getSimpleName().equals(name);
-        }).toArray();
-
-        System.out.println(components.get(componentClass));
-        System.out.println(Arrays.toString(objArray));
-        if (objArray.length == 0)
-            return null;
-        Object returnObject = objArray[objArray.length - 1];
-        return componentClass.cast(returnObject);
+        if (components.containsKey(name)) {
+            return componentClass.cast(components.get(name).getSingleton());
+        }
+        return null;
     }
 
     public <T> T getSingleton(Class<T> componentClass) {
-        if (!components.containsKey(componentClass))
-            return null;
-        List<Object> list = components.get(componentClass);
-        Object returnObject = list.get(list.size() - 1);
-        return componentClass.cast(returnObject);
+        for (PeaObject peaObject : components.values()) {
+            if (peaObject.getSingleton().getClass() == componentClass) 
+                return componentClass.cast(peaObject.getSingleton());
+        }
+        return null;
     }
 
     private Set<Class<?>> findConfigClasses(String basePackage) {

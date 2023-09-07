@@ -65,6 +65,9 @@ public class DependencyInjector {
                         continue;
                     }
 
+
+                    if (fieldType.getDeclaredConstructors().length == 0)
+                        throw new NoSuchMethodException(String.format("%s doesn't have @Pea and contructor", field.getName()));
                     Constructor<?> constructor = fieldType.getDeclaredConstructor();
                     if (constructor != null) {
                         dependency = constructor.newInstance();
@@ -74,6 +77,7 @@ public class DependencyInjector {
                     }
                 } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
                     e.printStackTrace();
+                    System.exit(1);
                 }
             }
         }
