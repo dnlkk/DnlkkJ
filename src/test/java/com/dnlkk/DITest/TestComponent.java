@@ -1,10 +1,9 @@
-package com.dnlkk;
+package com.dnlkk.DITest;
 
 import com.dnlkk.dependency_injector.annotations.AutoInject;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 
 @Data

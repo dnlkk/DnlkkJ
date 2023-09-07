@@ -1,12 +1,13 @@
-package com.dnlkk;
+package com.dnlkk.DITest;
 
 import com.dnlkk.dependency_injector.annotations.AutoInject;
 import com.dnlkk.dependency_injector.annotations.ConcreteInject;
 import com.dnlkk.dependency_injector.annotations.lifecycle.Prototype;
 import com.dnlkk.dependency_injector.annotations.lifecycle.Singleton;
-import com.dnlkk.dependency_injector.DependencyInjector;
-import com.dnlkk.dependency_injector.config.DependencyInjectionContainer;
 
+import lombok.Data;
+
+@Data
 public class DnlkkApp {
     @AutoInject
     @Prototype
@@ -28,21 +29,21 @@ public class DnlkkApp {
     @Prototype
     private Component dnlkkComponent22;
 
-    @AutoInject
+    @ConcreteInject(injectName = "myComponent")
     private MyComponent dnlkkComponent2weqwrq;
-    @AutoInject
+    @ConcreteInject(injectName = "myComponent")
     @Singleton
     private MyComponent dnlkkComponent2weqwrqq;
 
 
     @ConcreteInject(injectName = "myComponent")
     @Singleton
-    private MyComponent defaultComponentSingleton;
+    private Component defaultComponentSingleton;
 
     @ConcreteInject(injectName = "myComponent")
-    private MyComponent defaultComponentSingleton2;
+    private Component defaultComponentSingleton2;
 
-    @ConcreteInject(injectName = "myComponent")
+    @ConcreteInject(injectName = "dnlkkComponent2")
     private Component component;
 
     @Prototype
@@ -56,11 +57,6 @@ public class DnlkkApp {
     private TestComponent testComponent;
 
     public void runApp() {
-        DependencyInjectionContainer dependencyInjectionContainer = new DependencyInjectionContainer();
-        dependencyInjectionContainer.scan(this.getClass().getPackageName());
-        DependencyInjector dependencyInjector = new DependencyInjector(dependencyInjectionContainer);
-        dependencyInjector.inject(this);
-
         System.out.println(myComponent);
         myComponent.doSomething();
 

@@ -1,4 +1,4 @@
-package com.dnlkk;
+package com.dnlkk.DITest;
 
 public class DnlkkComponent implements Component{
 

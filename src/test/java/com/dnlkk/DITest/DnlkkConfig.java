@@ -1,4 +1,4 @@
-package com.dnlkk;
+package com.dnlkk.DITest;
 
 import com.dnlkk.dependency_injector.annotations.Pea;
 import com.dnlkk.dependency_injector.config.Config;
@@ -26,8 +26,8 @@ public class DnlkkConfig {
         return new TestComponent("hi!");
     }
 
-    // @Pea
-    // public Dummy dummy() {
-    //     return new Dummy("silly!");
-    // } 
+    @Pea
+    public Dummy dummy() {
+        return new Dummy("silly!");
+    } 
 }

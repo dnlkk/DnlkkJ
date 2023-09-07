@@ -1,4 +1,4 @@
-package com.dnlkk;
+package com.dnlkk.DITest;
 
 public class MyComponent implements Component {
     @Override

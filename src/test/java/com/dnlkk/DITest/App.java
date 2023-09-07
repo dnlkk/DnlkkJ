@@ -1,4 +1,4 @@
-package com.dnlkk;
+package com.dnlkk.DITest;
 
 /**
  * Hello world!
@@ -7,7 +7,6 @@ package com.dnlkk;
 public class App {
 
     public static void main(String[] args) {
-        DnlkkApp dnlkkApp = new DnlkkApp();
-        dnlkkApp.runApp();
+            new DnlkkApp().runApp();
     }
 }
