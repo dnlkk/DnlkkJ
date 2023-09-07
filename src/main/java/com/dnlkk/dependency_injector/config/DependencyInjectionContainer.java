@@ -12,10 +12,12 @@ import java.util.Map;
 import java.util.Set;
 
 import com.dnlkk.dependency_injector.annotations.Pea;
+import com.dnlkk.dependency_injector.annotations.components.RestController;
 
-public class ComponentFactory {
-    private final Map<String, PeaObject> components = new HashMap<>();
-    private Set<Class<?>> configClasses;
+public class DependencyInjectionContainer {
+    private final Map<String, PeaObject> peas = new HashMap<>();
+    private final Map<String, Object> components = new HashMap<>();
+    private Set<Class<?>> configClasses = new HashSet<>();
 
     public void scan(String basePackage) {
         this.configClasses = findConfigClasses(basePackage);
@@ -26,7 +28,7 @@ public class ComponentFactory {
             for (Method method : configClass.getDeclaredMethods()) {
                 if (method.isAnnotationPresent(Pea.class)) {
                     Object peaInstance = invokePeaMethod(configInstance, method);
-                    if (components.containsKey(method.getName()))
+                    if (peas.containsKey(method.getName()))
                         try {
                             throw new Exception(String.format("@Pea with the title: '%s' should be presented in only one @Config", method.getName()));
                         } catch (Exception e) {
@@ -34,22 +36,22 @@ public class ComponentFactory {
                             System.exit(1);
                         }
                     else
-                        components.put(method.getName(), new PeaObject(peaInstance, method, configInstance));
+                        peas.put(method.getName(), new PeaObject(peaInstance, method, configInstance));
                 }
             }
         }
     }
 
     public <T> T getPrototype(Class<T> componentClass, String name) {
-        if (components.containsKey(name)) {
-            PeaObject peaObject = components.get(name);
+        if (peas.containsKey(name)) {
+            PeaObject peaObject = peas.get(name);
             return componentClass.cast(invokePeaMethod(peaObject.getConfigInstance(), peaObject.getInvokeMethod()));
         }
         return null;
     }
 
     public <T> T getPrototype(Class<T> componentClass) {
-        for (PeaObject peaObject : components.values()) {
+        for (PeaObject peaObject : peas.values()) {
             if (peaObject.getSingleton().getClass() == componentClass) 
                 return componentClass.cast(invokePeaMethod(peaObject.getConfigInstance(), peaObject.getInvokeMethod()));
         }
@@ -57,14 +59,14 @@ public class ComponentFactory {
     }
 
     public <T> T getSingleton(Class<T> componentClass, String name) {
-        if (components.containsKey(name)) {
-            return componentClass.cast(components.get(name).getSingleton());
+        if (peas.containsKey(name)) {
+            return componentClass.cast(peas.get(name).getSingleton());
         }
         return null;
     }
 
     public <T> T getSingleton(Class<T> componentClass) {
-        for (PeaObject peaObject : components.values()) {
+        for (PeaObject peaObject : peas.values()) {
             if (peaObject.getSingleton().getClass() == componentClass) 
                 return componentClass.cast(peaObject.getSingleton());
         }
@@ -72,7 +74,6 @@ public class ComponentFactory {
     }
 
     private Set<Class<?>> findConfigClasses(String basePackage) {
-        Set<Class<?>> configClasses = new HashSet<>();
         String basePackagePath = basePackage.replace('.', '/');
 
         try {
@@ -92,7 +93,10 @@ public class ComponentFactory {
                                 Class<?> clazz = Class.forName(className);
 
                                 if (clazz.isAnnotationPresent(Config.class)) {
-                                    configClasses.add(clazz);
+                                    this.configClasses.add(clazz);
+                                }
+                                if (clazz.isAnnotationPresent(RestController.class)) {
+                                    this.components.put("", clazz);
                                 }
                             }
                         }

@@ -5,7 +5,7 @@ import com.dnlkk.dependency_injector.annotations.ConcreteInject;
 import com.dnlkk.dependency_injector.annotations.lifecycle.Prototype;
 import com.dnlkk.dependency_injector.annotations.lifecycle.Singleton;
 import com.dnlkk.dependency_injector.DependencyInjector;
-import com.dnlkk.dependency_injector.config.ComponentFactory;
+import com.dnlkk.dependency_injector.config.DependencyInjectionContainer;
 
 public class DnlkkApp {
     @AutoInject
@@ -56,9 +56,9 @@ public class DnlkkApp {
     private TestComponent testComponent;
 
     public void runApp() {
-        ComponentFactory сomponentFactory = new ComponentFactory();
-        сomponentFactory.scan(this.getClass().getPackageName());
-        DependencyInjector dependencyInjector = new DependencyInjector(сomponentFactory);
+        DependencyInjectionContainer dependencyInjectionContainer = new DependencyInjectionContainer();
+        dependencyInjectionContainer.scan(this.getClass().getPackageName());
+        DependencyInjector dependencyInjector = new DependencyInjector(dependencyInjectionContainer);
         dependencyInjector.inject(this);
 
         System.out.println(myComponent);
@@ -98,5 +98,6 @@ public class DnlkkApp {
 
         System.out.println(testComponent);
         System.out.println(testComponent.getText());
+        System.out.println(testComponent.getDummy().getText());
     }
 }

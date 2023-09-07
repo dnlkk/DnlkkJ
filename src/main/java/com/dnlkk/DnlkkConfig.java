@@ -25,4 +25,9 @@ public class DnlkkConfig {
     public TestComponent testComponent() {
         return new TestComponent("hi!");
     }
+
+    // @Pea
+    // public Dummy dummy() {
+    //     return new Dummy("silly!");
+    // } 
 }

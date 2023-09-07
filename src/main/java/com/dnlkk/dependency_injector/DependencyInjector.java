@@ -5,16 +5,26 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 
-import com.dnlkk.dependency_injector.config.ComponentFactory;
+import com.dnlkk.dependency_injector.config.DependencyInjectionContainer;
 import com.dnlkk.dependency_injector.annotations.ConcreteInject;
 import com.dnlkk.dependency_injector.annotations.lifecycle.Prototype;
 import com.dnlkk.dependency_injector.annotations.AutoInject;
 
 public class DependencyInjector {
-    private ComponentFactory componentFactory;
+    private DependencyInjectionContainer componentFactory;
 
-    public DependencyInjector(ComponentFactory componentFactory) {
+    public DependencyInjector(DependencyInjectionContainer componentFactory) {
         this.componentFactory = componentFactory;
+    }
+
+    private boolean fieldSet(Object target, Object dependency, Field field) throws IllegalArgumentException, IllegalAccessException{
+        if (dependency != null) {
+            this.inject(dependency);
+            field.setAccessible(true);
+            field.set(target, dependency);
+            return true;
+        }
+        return false;
     }
 
     public void inject(Object target) {
@@ -35,12 +45,7 @@ public class DependencyInjector {
                         if (dependency == null)
                             dependency = componentFactory.getSingleton(fieldType);
                     }
-                    System.out.println(field.getAnnotation(ConcreteInject.class).injectName());
-                    if (dependency != null) {
-                        field.setAccessible(true);
-                        field.set(target, dependency);
-                        continue;
-                    }
+                    this.fieldSet(target, dependency, field);
                 } catch (IllegalAccessException e) {
                     e.printStackTrace();
                 }
@@ -53,27 +58,22 @@ public class DependencyInjector {
                             dependency = componentFactory.getPrototype(fieldType);
                         if (dependency == null)
                             dependency = componentFactory.getPrototype(fieldType, field.getName());
-                        }
-                    else{
+                    }
+                    else {
                         dependency = componentFactory.getSingleton(fieldType);
                         if (dependency == null)
                             dependency = componentFactory.getSingleton(fieldType, fieldType.getName());
                     }
-                    if (dependency != null) {
-                        field.setAccessible(true);
-                        field.set(target, dependency);
+                    if (this.fieldSet(target, dependency, field))
                         continue;
-                    }
-
 
                     if (fieldType.getDeclaredConstructors().length == 0)
                         throw new NoSuchMethodException(String.format("%s doesn't have @Pea and contructor", field.getName()));
                     Constructor<?> constructor = fieldType.getDeclaredConstructor();
                     if (constructor != null) {
                         dependency = constructor.newInstance();
-                        field.setAccessible(true);
-                        field.set(target, dependency);
-                        continue;
+                        if (this.fieldSet(target, dependency, field))
+                            continue;
                     }
                 } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
                     e.printStackTrace();
