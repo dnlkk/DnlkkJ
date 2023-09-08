@@ -50,8 +50,8 @@ public class DnlkkApp {
     @ConcreteInject(injectName = "myComponent")
     private Component componentProto;
 
-    @AutoInject
-    private DnlkkComponent myComponentTest;
+    @ConcreteInject(injectName = "dnlkkComponent2")
+    private Component myComponentTest2;
     
     @AutoInject
     private TestComponent testComponent;
@@ -89,8 +89,8 @@ public class DnlkkApp {
         System.out.println(componentProto);
         componentProto.doSomething();
 
-        System.out.println(myComponentTest);
-        myComponentTest.doSomething();
+        System.out.println(myComponentTest2);
+        myComponentTest2.doSomething();
 
         System.out.println(testComponent);
         System.out.println(testComponent.getText());
