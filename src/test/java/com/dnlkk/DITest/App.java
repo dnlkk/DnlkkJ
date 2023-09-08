@@ -1,5 +1,8 @@
 package com.dnlkk.DITest;
 
+import com.dnlkk.dependency_injector.annotation_context.AnnotationApplicationContext;
+import com.dnlkk.dependency_injector.application_context.ApplicationContext;
+
 /**
  * Hello world!
  *
@@ -7,6 +10,10 @@ package com.dnlkk.DITest;
 public class App {
 
     public static void main(String[] args) {
-            new DnlkkApp().runApp();
+        ApplicationContext applicationContext = new AnnotationApplicationContext("com.dnlkk.DITest");
+        DnlkkApp dnlkkApp = new DnlkkApp();
+        applicationContext.injectDependencies(dnlkkApp);
+        
+        dnlkkApp.runApp();
     }
 }

@@ -12,8 +12,8 @@ import org.junit.jupiter.api.Test;
 import com.dnlkk.DITest.DnlkkApp;
 import com.dnlkk.DITest.Dummy;
 import com.dnlkk.DITest.TestComponent;
-import com.dnlkk.dependency_injector.DependencyInjector;
-import com.dnlkk.dependency_injector.config.DependencyInjectionContainer;
+import com.dnlkk.dependency_injector.annotation_context.AnnotationApplicationContext;
+import com.dnlkk.dependency_injector.application_context.ApplicationContext;
 
 @DisplayName("Dependency Injector DnlkkApp Tests")
 public class DependencyInjectorTest {
@@ -21,11 +21,9 @@ public class DependencyInjectorTest {
     private DnlkkApp dnlkkApp;
 
     public void setUp() {
-        DependencyInjectionContainer dependencyInjectionContainer = new DependencyInjectionContainer();
-        dependencyInjectionContainer.scan("com.dnlkk.DITest"); // Замените на пакет вашего приложения
-        DependencyInjector dependencyInjector = new DependencyInjector(dependencyInjectionContainer);
+        ApplicationContext applicationContext = new AnnotationApplicationContext("com.dnlkk.DITest");
         dnlkkApp = new DnlkkApp();
-        dependencyInjector.inject(dnlkkApp);
+        applicationContext.injectDependencies(dnlkkApp);
     }
 
     @BeforeEach

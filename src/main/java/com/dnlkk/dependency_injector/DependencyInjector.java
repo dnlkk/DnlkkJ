@@ -3,19 +3,19 @@ package com.dnlkk.dependency_injector;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
 
-import com.dnlkk.dependency_injector.config.DependencyInjectionContainer;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+
 import com.dnlkk.dependency_injector.annotations.ConcreteInject;
 import com.dnlkk.dependency_injector.annotations.lifecycle.Prototype;
+import com.dnlkk.dependency_injector.application_context.ApplicationContext;
 import com.dnlkk.dependency_injector.annotations.AutoInject;
 
+@Data
+@AllArgsConstructor
 public class DependencyInjector {
-    private DependencyInjectionContainer componentFactory;
-
-    public DependencyInjector(DependencyInjectionContainer componentFactory) {
-        this.componentFactory = componentFactory;
-    }
+    private ApplicationContext applicationContext;
 
     private boolean fieldSet(Object target, Object dependency, Field field) throws IllegalArgumentException, IllegalAccessException{
         if (dependency != null) {
@@ -36,14 +36,14 @@ public class DependencyInjector {
                     Class<?> fieldType = field.getType();
                     Object dependency;
                     if (field.isAnnotationPresent(Prototype.class)) {
-                        dependency = componentFactory.getPrototype(fieldType);
+                        dependency = applicationContext.getPrototypePea(fieldType);
                         if (dependency == null)
-                            dependency = componentFactory.getPrototype(fieldType, field.getAnnotation(ConcreteInject.class).injectName());
+                            dependency = applicationContext.getPrototypePea(fieldType, field.getAnnotation(ConcreteInject.class).injectName());
                     }
                     else {
-                        dependency = componentFactory.getSingleton(fieldType, field.getAnnotation(ConcreteInject.class).injectName());
+                        dependency = applicationContext.getSingletonPea(fieldType, field.getAnnotation(ConcreteInject.class).injectName());
                         if (dependency == null)
-                            dependency = componentFactory.getSingleton(fieldType);
+                            dependency = applicationContext.getSingletonPea(fieldType);
                     }
                     this.fieldSet(target, dependency, field);
                 } catch (IllegalAccessException e) {
@@ -55,14 +55,14 @@ public class DependencyInjector {
                     Class<?> fieldType = field.getType();
                     Object dependency;
                     if (field.isAnnotationPresent(Prototype.class)) {
-                            dependency = componentFactory.getPrototype(fieldType);
+                            dependency = applicationContext.getPrototypePea(fieldType);
                         if (dependency == null)
-                            dependency = componentFactory.getPrototype(fieldType, field.getName());
+                            dependency = applicationContext.getPrototypePea(fieldType, field.getName());
                     }
                     else {
-                        dependency = componentFactory.getSingleton(fieldType);
+                        dependency = applicationContext.getSingletonPea(fieldType);
                         if (dependency == null)
-                            dependency = componentFactory.getSingleton(fieldType, fieldType.getName());
+                            dependency = applicationContext.getSingletonPea(fieldType, fieldType.getName());
                     }
                     if (this.fieldSet(target, dependency, field))
                         continue;
