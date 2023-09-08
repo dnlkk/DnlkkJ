@@ -78,7 +78,7 @@ public class DependencyInjectorTest {
             assertNotNull(dnlkkApp.getDefaultComponentSingleton2());
 
             // DnlkkComponent
-            assertNotNull(dnlkkApp.getMyComponentTest());
+            assertNotNull(dnlkkApp.getMyComponentTest2());
             assertNotNull(dnlkkApp.getComponent());
 
             // TestComponent
@@ -96,7 +96,7 @@ public class DependencyInjectorTest {
         @Test
         @DisplayName("Singleton peas DnlkkComponent equals test")
         public void dnlkkComponentSingletonTest() {
-            assertEquals(dnlkkApp.getMyComponentTest(), dnlkkApp.getComponent());
+            assertEquals(dnlkkApp.getMyComponentTest2(), dnlkkApp.getComponent());
         }
 
         @Test
