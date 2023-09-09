@@ -5,19 +5,26 @@ import java.util.Map;
 import com.dnlkk.dependency_injector.DependencyInjector;
 
 public abstract class ApplicationContext implements PeaFactory {
-    private final PeaFactory peaFactory;
-    private final ConfigScanner configScanner;
-    private final DependencyInjector dependencyInjector;
+    protected final String basePackage;
+    protected final DependencyInjector dependencyInjector;
 
-    public ApplicationContext(String basePackage, PeaFactory peaFactory, ConfigScanner configScanner) {
+    protected final PeaFactory peaFactory;
+    protected final ConfigScanner configScanner;
+    protected final ComponentFactory componentFactory;
+
+    public ApplicationContext(String basePackage, PeaFactory peaFactory, ConfigScanner configScanner, ComponentFactory componentFactory) {
+        dependencyInjector = new DependencyInjector(this);
+        this.basePackage = basePackage;
+
         this.configScanner = configScanner;
         this.peaFactory = peaFactory;
-        this.peaFactory.setPeas(this.configScanner.scan(basePackage));
-        dependencyInjector = new DependencyInjector(this);
+        this.componentFactory = componentFactory;
     }
 
     public void injectDependencies(Object target) {
+        peaFactory.setPeas(this.configScanner.scan(basePackage));
         dependencyInjector.inject(target);
+        componentFactory.initComponents(basePackage);
     }
 
     @Override
