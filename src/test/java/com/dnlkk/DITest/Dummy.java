@@ -1,6 +1,7 @@
 package com.dnlkk.DITest;
 
 import com.dnlkk.dependency_injector.annotations.AutoInject;
+import com.dnlkk.dependency_injector.annotations.components.Component;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

@@ -8,7 +8,6 @@ import com.dnlkk.dependency_injector.application_context.ApplicationContext;
  *
  */
 public class App {
-
     public static void main(String[] args) {
         ApplicationContext applicationContext = new AnnotationApplicationContext("com.dnlkk.DITest");
         DnlkkApp dnlkkApp = new DnlkkApp();
