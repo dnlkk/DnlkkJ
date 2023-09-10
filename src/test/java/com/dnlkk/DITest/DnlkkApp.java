@@ -56,6 +56,9 @@ public class DnlkkApp {
     @AutoInject
     private TestComponent testComponent;
 
+    @AutoInject
+    private TestRepository repo;
+
     public void runApp() {
         System.out.println(myComponent);
         myComponent.doSomething();
@@ -95,5 +98,9 @@ public class DnlkkApp {
         System.out.println(testComponent);
         System.out.println(testComponent.getText());
         System.out.println(testComponent.getDummy().getText());
+
+        System.out.println(repo);
+        System.out.println(repo.findAll());
+        System.out.println(repo.findById(1));
     }
 }
