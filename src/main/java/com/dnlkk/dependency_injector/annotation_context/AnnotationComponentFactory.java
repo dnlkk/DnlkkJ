@@ -14,6 +14,7 @@ import com.dnlkk.dependency_injector.annotations.components.Repository;
 import com.dnlkk.dependency_injector.annotations.components.RestController;
 import com.dnlkk.dependency_injector.annotations.components.Service;
 import com.dnlkk.dependency_injector.application_context.ComponentFactory;
+import com.dnlkk.repository.DnlkkRepositoryFactory;
 
 import lombok.Data;
 
@@ -44,12 +45,15 @@ public class AnnotationComponentFactory implements ComponentFactory {
                                 Class<?> clazz = Class.forName(className);
 
                                 if (isComponentClass(clazz)) {
-                                    Object componentInstance = createComponentInstance(clazz);
+                                    Object componentInstance = null;
 
-                                    if (!clazz.isAnnotationPresent(Repository.class))
+                                    if (!clazz.isAnnotationPresent(Repository.class)) {
+                                        componentInstance = createComponentInstance(clazz);
                                         dependencyInjector.inject(componentInstance);
+                                    } else 
+                                        componentInstance = DnlkkRepositoryFactory.createRepositoryInstance(clazz);
 
-                                    components.put(clazz.getName(), componentInstance);
+                                    components.put(clazz.getSimpleName(), componentInstance);
                                 }
                             }
                         }
@@ -78,5 +82,15 @@ public class AnnotationComponentFactory implements ComponentFactory {
             e.printStackTrace();
             throw new RuntimeException("Failed to create an instance of " + clazz);
         }
+    }
+
+    @Override
+    public boolean containsComponent(String componentClass) {
+        return components.containsKey(componentClass);
+    }
+
+    @Override
+    public Object getComponent(String componentClass) {
+        return components.get(componentClass);
     }
 }
