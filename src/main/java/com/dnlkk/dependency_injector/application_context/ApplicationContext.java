@@ -4,7 +4,7 @@ import java.util.Map;
 
 import com.dnlkk.dependency_injector.DependencyInjector;
 
-public abstract class ApplicationContext implements PeaFactory {
+public abstract class ApplicationContext implements PeaFactory, ComponentContainer {
     protected final String basePackage;
     protected final DependencyInjector dependencyInjector;
 
@@ -22,9 +22,9 @@ public abstract class ApplicationContext implements PeaFactory {
     }
 
     public void injectDependencies(Object target) {
+        componentFactory.initComponents(basePackage);
         peaFactory.setPeas(this.configScanner.scan(basePackage));
         dependencyInjector.inject(target);
-        componentFactory.initComponents(basePackage);
     }
 
     @Override
@@ -55,5 +55,15 @@ public abstract class ApplicationContext implements PeaFactory {
     @Override
     public <V> void setPeas(Map<String, V> peas) {
         peaFactory.setPeas(peas);
+    }
+
+    @Override
+    public boolean containsComponent(String componentClass) {
+        return componentFactory.containsComponent(componentClass);
+    }
+
+    @Override
+    public Object getComponent(String componentClass) {
+        return componentFactory.getComponent(componentClass);
     }
 }
