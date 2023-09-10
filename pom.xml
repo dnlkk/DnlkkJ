@@ -17,6 +17,13 @@
   </properties>
 
   <dependencies>
+
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>42.6.0</version>
+    </dependency>
+
   <!-- https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-api -->
   <dependency>
       <groupId>org.junit.jupiter</groupId>
@@ -24,7 +31,8 @@
       <version>5.10.0</version>
       <scope>test</scope>
   </dependency>
-
+  
+  
     
     <dependency>
       <groupId>org.projectlombok</groupId>
