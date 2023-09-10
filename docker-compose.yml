@@ -1,0 +1,25 @@
+version: "3.9"
+services:
+  user-postgres:
+    image: library/postgres:14
+    container_name: user-postgres
+    restart: on-failure
+    environment:
+      POSTGRES_USER: dnlkk
+      POSTGRES_PASSWORD: dnlkkpass
+      POSTGRES_DB: dnlkk_db
+    volumes:
+      - ./db/data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: pg_isready -d dnlkk_db -U dnlkk
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    ports:
+      - 5432:5432
+    deploy:
+      resources:
+        limits:
+          memory: 256M
