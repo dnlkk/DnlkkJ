@@ -17,9 +17,8 @@ public class DependencyInjector {
         this.applicationContext = applicationContext;
     }
 
-    private boolean setField(Object targetObject, Object dependencyInstance, Field field) {
+    public static boolean setField(Object targetObject, Object dependencyInstance, Field field) {
         if (dependencyInstance != null) {
-            this.inject(dependencyInstance);
             field.setAccessible(true);
             try {
                 field.set(targetObject, dependencyInstance);
@@ -50,21 +49,36 @@ public class DependencyInjector {
             Class<?> fieldType = field.getType();
             String injectName = null;
             Object dependencyInstance = null;
+
             if (field.isAnnotationPresent(ConcreteInject.class)) 
                 injectName = field.getAnnotation(ConcreteInject.class).injectName();
-            else if (field.isAnnotationPresent(AutoInject.class))
-                injectName = field.getName();
-            else
+            else if (field.isAnnotationPresent(AutoInject.class)){
+                System.out.println(fieldType.getSimpleName());
+                if (applicationContext.containsComponent(fieldType.getSimpleName()))
+                    injectName = fieldType.getSimpleName();
+                else
+                    injectName = field.getName();
+            } else
                 continue;
+            
+            
 
             if (field.isAnnotationPresent(Prototype.class))
                 dependencyInstance = applicationContext.getPrototypePea(fieldType, injectName);
-            else
-                dependencyInstance = applicationContext.getSingletonPea(fieldType, injectName);
+            else{
+                if (applicationContext.containsComponent(injectName))
+                    dependencyInstance = applicationContext.getComponent(injectName);
+                else    
+                    dependencyInstance = applicationContext.getSingletonPea(fieldType, injectName);
+                System.out.println(dependencyInstance);
+                System.out.println(injectName);
+                System.out.println(applicationContext.containsComponent(injectName));
+            }
 
             if (dependencyInstance == null && field.isAnnotationPresent(AutoInject.class))
                 dependencyInstance = createDependencyInstance(fieldType);
 
+            this.inject(dependencyInstance);
             if (!setField(targetObject, dependencyInstance, field))
                 throw new RuntimeException("Dependency injection failed for field: " + field.getName());
         }
