@@ -5,6 +5,6 @@ import com.dnlkk.repository.DnlkkRepository;
 
 import lombok.Data;
 
-
-public interface TestRepository extends DnlkkRepository<Long, User>{
+@Repository
+public interface TestRepository extends DnlkkRepository<Integer, User>{
 }
