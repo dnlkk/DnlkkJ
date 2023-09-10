@@ -10,15 +10,20 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
+import javax.sql.DataSource;
+
 import com.dnlkk.dependency_injector.DependencyInjector;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 
 import lombok.Data;
 
 @Data
 public class RepositoryProxyHandler implements InvocationHandler { 
-    private final Connection connection;
+    private final DataSource dataSource;
     private String tableName;
     private Class<?> keyClass;
     private Class<?> valueClass;
@@ -27,9 +32,13 @@ public class RepositoryProxyHandler implements InvocationHandler {
         // Инициализация подключения к базе данных
         try {
             Class.forName("org.postgresql.Driver");
-            connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/dnlkk_db", "dnlkk", "dnlkkpass");
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to establish a database connection", e);
+
+            HikariConfig config = new HikariConfig();
+            config.setJdbcUrl("jdbc:postgresql://localhost:5432/dnlkk_db");
+            config.setUsername("dnlkk");
+            config.setPassword("dnlkkpass");
+            config.setMaximumPoolSize(10); // Максимальное количество соединений в пуле
+            this.dataSource = new HikariDataSource(config);
         } catch (ClassNotFoundException e) {
             throw new RuntimeException("Driver not found", e);
         }
@@ -37,31 +46,32 @@ public class RepositoryProxyHandler implements InvocationHandler {
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        // Обработка вызовов методов и выполнение операций с базой данных
+        
         if (method.getName().equals("findAll")) {
-            // Пример: выполнение SELECT * FROM table_name
-            // и возврат результата как список объектов
+
             List<Object> result = executeSelectAllQuery();
             return result;
         } else if (method.getName().equals("findById")) {
-            // Пример: выполнение SELECT * FROM table_name WHERE id = ?
-            // и возврат результата как объекта
+            
             Object result = executeSelectByIdQuery(args[0]);
             return result;
+        } else if (method.getName().equals("save")) {
+            
+            Object result = save(args[0]);
+            return result;
         }
-        // Другие методы могут быть обработаны аналогичным образом
+        
         return null;
     }
 
-    public List<Object> executeSelectAllQuery() throws SQLException {
+    public List<Object> executeSelectAllQuery() {
         List<Object> result = new ArrayList<>();
         
-            // SQL-запрос на выбор всех записей из таблицы tableName
-            String sql = "SELECT * FROM " + tableName;
-            
+        
+        String sql = "SELECT * FROM " + tableName;
+        try (Connection connection = dataSource.getConnection()) {
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 try (ResultSet resultSet = statement.executeQuery()) {
-                    List<Object> resultList = new ArrayList<>();
                     while (resultSet.next()) {
                         // Создание объекта на основе данных из resultSet
                         try {
@@ -72,21 +82,25 @@ public class RepositoryProxyHandler implements InvocationHandler {
                                 Object retrievedObject = resultSet.getObject(field.getName());
                                 DependencyInjector.setField(entity, retrievedObject, field);
                             }
-                            resultList.add(entity);
+                            result.add(entity);
                         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
                                 | InvocationTargetException | NoSuchMethodException | SecurityException e) {
                             e.printStackTrace();
                         }
                     }
-                     return resultList;
+                    return result;
                 }
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return result;
     }
     
     public Object executeSelectByIdQuery(Object id) throws SQLException {
-            // SQL-запрос на выбор записи по идентификатору
-            String sql = "SELECT * FROM " + tableName + " WHERE id = ?";
+        String sql = "SELECT * FROM " + tableName + " WHERE id = ?";
             
+        try (Connection connection = dataSource.getConnection()) {
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 statement.setObject(1, id);
                 try (ResultSet resultSet = statement.executeQuery()) {
@@ -109,24 +123,47 @@ public class RepositoryProxyHandler implements InvocationHandler {
                     }
                 }
             }
-        
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         return null; // Запись с заданным id не найдена
     }
     
-    public Object save(Object entity) throws SQLException {
-            // SQL-запрос на сохранение (INSERT) или обновление (UPDATE) сущности
-            String sql = "INSERT INTO " + tableName + " (...) VALUES (...)"; // Замените на соответствующий SQL
-            
-            try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                // Установите параметры для SQL-запроса на основе значений сущности entity
-                // statement.setXXX(index, value);
-                
-                // Выполните запрос
-                statement.executeUpdate();
-                
-                // Верните результат сохранения (например, сгенерированный ключ)
-                return entity; // Замените на фактический результат
+    public Object save(Object entity) {
+        String sql = "INSERT INTO " + tableName + " (name, surname) VALUES (?, ?)"; // Замените на соответствующий SQL
+
+        try {
+            Field idField = entity.getClass().getDeclaredField("id");
+            idField.setAccessible(true);
+            Object id = idField.get(entity);
+            if (executeSelectByIdQuery(id) != null){
+                sql = "UPDATE " + tableName + " SET name = ?, surname = ? WHERE id = " + id;
             }
+   
+            try (Connection connection = dataSource.getConnection()) {
+                try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                    int k = 1;
+                    Field[] fields = entity.getClass().getDeclaredFields();
+                    for (Field field : fields) {
+                        if (field.getName() != "id"){
+                            field.setAccessible(true); // Установите доступность поля, если оно private
+                            Object fieldValue = field.get(entity); // Получите значение поля из объекта entity
+                            System.out.println(fieldValue);
+                            statement.setObject(k, fieldValue);
+                            k++;
+                        }
+                    }
+
+                    statement.executeUpdate();
+                    return entity;
+                }
+            } catch (SQLException | IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | SQLException | IllegalAccessException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
         }
-    
+        return null;   
+    }
 }

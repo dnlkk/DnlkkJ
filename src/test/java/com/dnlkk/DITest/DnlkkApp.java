@@ -101,6 +101,10 @@ public class DnlkkApp {
 
         System.out.println(repo);
         System.out.println(repo.findAll());
-        System.out.println(repo.findById(1));
+        User user = repo.findById(1);
+        System.out.println(user);
+        user.setName("Ruslan");
+        repo.save(user);
+        System.out.println(repo.save(user));
     }
 }
