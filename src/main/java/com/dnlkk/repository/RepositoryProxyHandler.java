@@ -45,18 +45,13 @@ public class RepositoryProxyHandler implements InvocationHandler {
     }
 
     @Override
-    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        
-        if (method.getName().equals("findAll")) {
-
-            List<Object> result = executeSelectAllQuery();
-            return result;
-        } else if (method.getName().equals("findById")) {
-            
-            Object result = executeSelectByIdQuery(args[0]);
+    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {             
+        if (method.getName().startsWith("find")) {
+            List<Object> result = executeFind(QueryGenerator.generateQuery(method, tableName, valueClass), args);
+            if (result.size() == 1)
+                return result.get(0);
             return result;
         } else if (method.getName().equals("save")) {
-            
             Object result = save(args[0]);
             return result;
         }
@@ -64,13 +59,14 @@ public class RepositoryProxyHandler implements InvocationHandler {
         return null;
     }
 
-    public List<Object> executeSelectAllQuery() {
+    public List<Object> executeFind(String sql, Object[] args) {
         List<Object> result = new ArrayList<>();
         
-        
-        String sql = "SELECT * FROM " + tableName;
         try (Connection connection = dataSource.getConnection()) {
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                if (args != null)
+                    for (int i = 0; i < args.length; i++)
+                        statement.setObject(i + 1, args[i]);
                 try (ResultSet resultSet = statement.executeQuery()) {
                     while (resultSet.next()) {
                         // Создание объекта на основе данных из resultSet

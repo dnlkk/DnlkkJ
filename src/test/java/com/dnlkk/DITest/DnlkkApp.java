@@ -106,5 +106,13 @@ public class DnlkkApp {
         user.setName("Ruslan");
         repo.save(user);
         System.out.println(repo.save(user));
+
+        User userNew = new User();
+        userNew.setName("toki");
+        userNew.setSurname("tuki");
+        System.out.println(userNew);
+        // System.out.println(repo.save(userNew));
+        System.out.println(repo.findByNameAndSurnameOrId("toki", "tuki", 3));
+        System.out.println(repo.findByName("toki"));
     }
 }
