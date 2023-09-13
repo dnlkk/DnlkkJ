@@ -9,7 +9,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import com.dnlkk.DITest.DnlkkApp;
+import com.dnlkk.DITest.DnlkkTestApp;
 import com.dnlkk.DITest.Dummy;
 import com.dnlkk.DITest.TestComponent;
 import com.dnlkk.dependency_injector.annotation_context.AnnotationApplicationContext;
@@ -18,11 +18,11 @@ import com.dnlkk.dependency_injector.application_context.ApplicationContext;
 @DisplayName("Dependency Injector DnlkkApp Tests")
 public class DependencyInjectorTest {
     
-    private DnlkkApp dnlkkApp;
+    private DnlkkTestApp dnlkkApp;
 
     public void setUp() {
         ApplicationContext applicationContext = new AnnotationApplicationContext("com.dnlkk.DITest");
-        dnlkkApp = new DnlkkApp();
+        dnlkkApp = new DnlkkTestApp();
         applicationContext.injectDependencies(dnlkkApp);
     }
 
@@ -102,25 +102,15 @@ public class DependencyInjectorTest {
         @Test
         @DisplayName("Singleton pea TestComponent have correct @AutoInject fields test")
         public void testComponentSingletonRecursiveDITest() {
-            // Получаем экземпляр TestComponent
             TestComponent testComponent = dnlkkApp.getTestComponent();
 
-            // Проверяем, что он не равен null
             assertNotNull(testComponent);
-
-            // Проверяем ожидаемое значение поля text
             assertEquals("hi!", testComponent.getText());
 
-            // Получаем вложенный компонент Dummy
             Dummy dummy = testComponent.getDummy();
 
-            // Проверяем, что он не равен null
             assertNotNull(dummy);
-
-            // Проверяем ожидаемое значение поля text в Dummy
             assertEquals("silly!", dummy.getText());
-
-            // Проверяем ожидаемое значение поля name в Bobby
             assertEquals("Bobby", dummy.getBobby().getName());
         }
     }

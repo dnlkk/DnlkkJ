@@ -1,18 +1,15 @@
 package com.dnlkk.DITest;
 
-import com.dnlkk.dependency_injector.annotation_context.AnnotationApplicationContext;
-import com.dnlkk.dependency_injector.application_context.ApplicationContext;
+import com.dnlkk.DnlkkApplication;
+import com.dnlkk.boot.annotations.DnlkkApp;
 
 /**
  * Hello world!
  *
  */
+@DnlkkApp
 public class App {
     public static void main(String[] args) {
-        ApplicationContext applicationContext = new AnnotationApplicationContext("com.dnlkk.DITest");
-        DnlkkApp dnlkkApp = new DnlkkApp();
-        applicationContext.injectDependencies(dnlkkApp);
-        
-        dnlkkApp.runApp();
+        DnlkkApplication.run(DnlkkTestApp.class, args);
     }
 }

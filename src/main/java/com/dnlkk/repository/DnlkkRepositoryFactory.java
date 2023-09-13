@@ -36,7 +36,7 @@ public class DnlkkRepositoryFactory {
         Table tableAnnotation = entityClass.getAnnotation(Table.class);
     
         if (tableAnnotation != null) 
-            return tableAnnotation.tableName();
+            return tableAnnotation.value();
     
         throw new IllegalArgumentException("No @Table annotation found on the entity class.");
     }
