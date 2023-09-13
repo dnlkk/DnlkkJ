@@ -1,12 +1,11 @@
 package com.dnlkk.dependency_injector.annotation_context;
 
-import com.dnlkk.dependency_injector.DependencyInjector;
 import com.dnlkk.dependency_injector.application_context.ApplicationContext;
 
 public class AnnotationApplicationContext extends ApplicationContext{
-    public AnnotationApplicationContext(String basePackage) {
+    public AnnotationApplicationContext(Object baseObject) {
         super(
-            basePackage, 
+            baseObject, 
             new AnnotationPeaFactory(), 
             new AnnotationConfigScanner(),
             new AnnotationComponentFactory()

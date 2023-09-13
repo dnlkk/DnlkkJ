@@ -53,7 +53,6 @@ public class DependencyInjector {
             if (field.isAnnotationPresent(ConcreteInject.class)) 
                 injectName = field.getAnnotation(ConcreteInject.class).injectName();
             else if (field.isAnnotationPresent(AutoInject.class)){
-                System.out.println(fieldType.getSimpleName());
                 if (applicationContext.containsComponent(fieldType.getSimpleName()))
                     injectName = fieldType.getSimpleName();
                 else
@@ -70,9 +69,6 @@ public class DependencyInjector {
                     dependencyInstance = applicationContext.getComponent(injectName);
                 else    
                     dependencyInstance = applicationContext.getSingletonPea(fieldType, injectName);
-                System.out.println(dependencyInstance);
-                System.out.println(injectName);
-                System.out.println(applicationContext.containsComponent(injectName));
             }
 
             if (dependencyInstance == null && field.isAnnotationPresent(AutoInject.class))

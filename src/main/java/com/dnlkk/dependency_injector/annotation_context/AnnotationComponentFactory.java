@@ -64,7 +64,6 @@ public class AnnotationComponentFactory implements ComponentFactory {
             e.printStackTrace();
             throw new RuntimeException("Failed to scan for components.");
         }
-        System.out.println(components);
     }
 
     private boolean isComponentClass(Class<?> clazz) {
