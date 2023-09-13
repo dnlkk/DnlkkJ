@@ -2,6 +2,9 @@ package com.dnlkk.dependency_injector.application_context;
 
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.dnlkk.dependency_injector.DependencyInjector;
 
 public abstract class ApplicationContext implements PeaFactory, ComponentContainer {
@@ -11,8 +14,21 @@ public abstract class ApplicationContext implements PeaFactory, ComponentContain
     protected final PeaFactory peaFactory;
     protected final ConfigScanner configScanner;
     protected final ComponentFactory componentFactory;
+    
+    private static final Logger logger = LoggerFactory.getLogger(ApplicationContext.class);
 
     public ApplicationContext(String basePackage, PeaFactory peaFactory, ConfigScanner configScanner, ComponentFactory componentFactory) {
+        System.out.println("""
+                                     |‾‾|   /|‾‾|   /‾‾/
+            +========================|  |==/ |  |==/  /=+
+            |‾‾‾‾‾‾‾\\ |‾‾‾\\ |‾‾|‾‾|  |  | / .| .| /  /  
+            | .|‾\\   \\| \\  \\|. |  .  |+ |/  /|  |/ ./  
+            |  |==\\   ǁ .\\  \\  |  |==|  .  {=|      }===⇒ 
+            |  |__/  /|  |\\  \\.|  |__|_ |\\  \\|  |\\  \\ 
+            |_______/ |__| \\___|_._____|| \\ .\\  | \\  \\  
+            +========================|. |==\\  \\ |==\\ .\\=+ 
+              :: Dnlkk ::    (v%.%.%)|__|   \\__\\|   \\__\\
+                """);
         dependencyInjector = new DependencyInjector(this);
         this.basePackage = basePackage;
 
