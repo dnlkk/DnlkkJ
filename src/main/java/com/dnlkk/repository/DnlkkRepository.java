@@ -6,5 +6,5 @@ public interface DnlkkRepository<K, V> {
     V findById(K id);
     List<V> findAll();
     V save(V entity);
-    void deleteById(K id);
+    V deleteById(K id);
 }
