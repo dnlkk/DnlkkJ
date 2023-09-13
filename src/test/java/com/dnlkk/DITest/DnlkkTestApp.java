@@ -8,7 +8,7 @@ import com.dnlkk.dependency_injector.annotations.lifecycle.Singleton;
 import lombok.Data;
 
 @Data
-public class DnlkkApp {
+public class DnlkkTestApp {
     @AutoInject
     @Prototype
     private Component myComponent;
