@@ -1,5 +1,6 @@
 package com.dnlkk.DITest;
 
+import com.dnlkk.boot.annotations.ConfigValue;
 import com.dnlkk.dependency_injector.annotations.AutoInject;
 import com.dnlkk.dependency_injector.annotations.ConcreteInject;
 import com.dnlkk.dependency_injector.annotations.lifecycle.Prototype;
@@ -59,6 +60,9 @@ public class DnlkkTestApp {
     @AutoInject
     private TestRepository repo;
 
+    @ConfigValue("app.version")
+    private String version;
+
     public void runApp() {
         System.out.println(myComponent);
         myComponent.doSomething();
@@ -116,5 +120,7 @@ public class DnlkkTestApp {
         System.out.println(repo.findByName("toki"));
 
         System.out.println(repo.countByName("Ruslan"));
+
+        System.out.println(version);
     }
 }

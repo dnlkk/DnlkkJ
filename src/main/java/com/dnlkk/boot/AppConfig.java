@@ -19,6 +19,8 @@ public class AppConfig {
     }
 
     private static String findProperty(Map<String, Object> config, String key) {
+        if (config == null)
+            return null;
         if (config.containsKey(key))
             return config.get(key).toString();
         String[] keys = key.split("\\.");
