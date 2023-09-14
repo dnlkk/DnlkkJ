@@ -9,10 +9,18 @@ public class QueryGenerator {
     public static String generateQuery(Method method, String tableName, Class<?> valueClass) {
         String methodName = method.getName();
         String[] methodParts = methodName.split("(?=[A-Z])"); // Разбиваем имя метода по заглавным буквам
+        StringBuilder query = new StringBuilder("");
 
         System.out.println(Arrays.toString(methodParts));
         if (methodParts.length > 0) {
-            StringBuilder query = new StringBuilder("SELECT * FROM " + tableName);
+            if (methodParts[0].equals("find"))
+                query.append("SELECT * ");
+            else if (methodParts[0].equals("count"))
+                query.append("SELECT COUNT(*) ");
+            else if (methodParts[0].equals("sum"))
+                query.append("SELECT SUM(*) ");
+
+            query.append("FROM " + tableName);
             boolean whereClauseAdded = false;
             
             Field[] fields = valueClass.getDeclaredFields();

@@ -48,15 +48,34 @@ public class RepositoryProxyHandler implements InvocationHandler {
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {             
         if (method.getName().startsWith("find")) {
             List<Object> result = executeFind(QueryGenerator.generateQuery(method, tableName, valueClass), args);
-            if (result.size() == 1)
+            if (result.size() == 1 && method.getReturnType() != List.class)
                 return result.get(0);
             return result;
+        } else if (method.getName().startsWith("count")) {
+            String sql = QueryGenerator.generateQuery(method, tableName, valueClass);
+            return executeCount(sql, args);
         } else if (method.getName().equals("save")) {
             Object result = save(args[0]);
             return result;
         }
-        
         return null;
+    }
+
+
+    public Integer executeCount(String sql, Object[] args) throws SQLException {
+        try (Connection connection = dataSource.getConnection()) {
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+
+                if (args != null)
+                    for (int i = 0; i < args.length; i++)
+                        statement.setObject(i + 1, args[i]);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    if (resultSet.next())
+                        return resultSet.getInt("count");
+                }
+            }
+        }
+        return 0;
     }
 
     public List<Object> executeFind(String sql, Object[] args) {
@@ -72,13 +91,12 @@ public class RepositoryProxyHandler implements InvocationHandler {
                         // Создание объекта на основе данных из resultSet
                         try {
                             Object entity = valueClass.getConstructor().newInstance();
-
                             Field[] fields = valueClass.getDeclaredFields();
                             for (Field field : fields) {
                                 Object retrievedObject = resultSet.getObject(field.getName());
                                 DependencyInjector.setField(entity, retrievedObject, field);
                             }
-                            result.add(entity);
+                                result.add(entity);
                         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
                                 | InvocationTargetException | NoSuchMethodException | SecurityException e) {
                             e.printStackTrace();

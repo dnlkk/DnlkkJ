@@ -14,4 +14,6 @@ public interface TestRepository extends DnlkkRepository<Integer, User>{
     List<User> findByName(String name);
     @Query("SELECT * FROM user_table WHERE id = :userId")
     User testSelect(String userId);
+    Integer countAll();
+    Integer countByName(String name);
 }
