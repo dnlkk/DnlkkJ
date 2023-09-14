@@ -21,9 +21,7 @@ public class DependencyInjectorTest {
     private DnlkkTestApp dnlkkApp;
 
     public void setUp() {
-        ApplicationContext applicationContext = new AnnotationApplicationContext("com.dnlkk.DITest");
-        dnlkkApp = new DnlkkTestApp();
-        applicationContext.injectDependencies(dnlkkApp);
+        dnlkkApp = (DnlkkTestApp) DnlkkApplication.run(DnlkkTestApp.class, new String[]{});
     }
 
     @BeforeEach

@@ -51,7 +51,7 @@ public class DependencyInjector {
             Object dependencyInstance = null;
 
             if (field.isAnnotationPresent(ConcreteInject.class)) 
-                injectName = field.getAnnotation(ConcreteInject.class).injectName();
+                injectName = field.getAnnotation(ConcreteInject.class).value();
             else if (field.isAnnotationPresent(AutoInject.class)){
                 if (applicationContext.containsComponent(fieldType.getSimpleName()))
                     injectName = fieldType.getSimpleName();

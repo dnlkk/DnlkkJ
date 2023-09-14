@@ -13,11 +13,11 @@ public class DnlkkTestApp {
     @Prototype
     private Component myComponent;
 
-    @ConcreteInject(injectName = "myComponent")
+    @ConcreteInject("myComponent")
     @Prototype
     private Component defaultComponent;
 
-    @ConcreteInject(injectName = "myComponent")
+    @ConcreteInject("myComponent")
     @Prototype
     private Component defaultComponent1;
 
@@ -25,32 +25,32 @@ public class DnlkkTestApp {
     @Prototype
     private Component dnlkkComponent2;
     
-    @ConcreteInject(injectName = "dnlkkComponent2")
+    @ConcreteInject("dnlkkComponent2")
     @Prototype
     private Component dnlkkComponent22;
 
-    @ConcreteInject(injectName = "myComponent")
+    @ConcreteInject("myComponent")
     private MyComponent dnlkkComponent2weqwrq;
-    @ConcreteInject(injectName = "myComponent")
+    @ConcreteInject("myComponent")
     @Singleton
     private MyComponent dnlkkComponent2weqwrqq;
 
 
-    @ConcreteInject(injectName = "myComponent")
+    @ConcreteInject("myComponent")
     @Singleton
     private Component defaultComponentSingleton;
 
-    @ConcreteInject(injectName = "myComponent")
+    @ConcreteInject("myComponent")
     private Component defaultComponentSingleton2;
 
-    @ConcreteInject(injectName = "dnlkkComponent2")
+    @ConcreteInject("dnlkkComponent2")
     private Component component;
 
     @Prototype
-    @ConcreteInject(injectName = "myComponent")
+    @ConcreteInject("myComponent")
     private Component componentProto;
 
-    @ConcreteInject(injectName = "dnlkkComponent2")
+    @ConcreteInject(value = "dnlkkComponent2")
     private Component myComponentTest2;
     
     @AutoInject
@@ -114,5 +114,7 @@ public class DnlkkTestApp {
         // System.out.println(repo.save(userNew));
         System.out.println(repo.findByNameAndSurnameOrId("toki", "tuki", 3));
         System.out.println(repo.findByName("toki"));
+
+        System.out.println(repo.countByName("Ruslan"));
     }
 }
