@@ -1,8 +1,6 @@
 package com.dnlkk;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,7 +11,7 @@ import com.dnlkk.dependency_injector.annotation_context.AnnotationApplicationCon
 import com.dnlkk.dependency_injector.application_context.ApplicationContext;
 
 public class DnlkkApplication {
-    private boolean APPLICATION_CONFIG;
+    private boolean isApplicationConfigLoaded;
     private String banner = null;
     private Class<?> primarySource;
     private Class<? extends ApplicationContext> applicationContextClass;
@@ -39,8 +37,8 @@ public class DnlkkApplication {
     }
 
     public DnlkkApplication(Class<?> clazz) {
-        APPLICATION_CONFIG = AppConfig.loadConfig();
-        if (APPLICATION_CONFIG)
+        isApplicationConfigLoaded = AppConfig.loadConfig();
+        if (isApplicationConfigLoaded)
             banner = Banner.init();
         if (banner != null)
             System.out.println(banner);

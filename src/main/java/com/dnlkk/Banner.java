@@ -1,20 +1,15 @@
 package com.dnlkk;
 
-import java.io.InputStream;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Scanner;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.dnlkk.boot.AppConfig;
-import com.dnlkk.dependency_injector.application_context.ApplicationContext;
 
 public class Banner {
     private static String banner;
-    private static final Logger logger = LoggerFactory.getLogger(ApplicationContext.class);
+    private static final Logger logger = LoggerFactory.getLogger(Banner.class);
 
     public static String init() {
         try (Scanner scanner = new Scanner(Banner.class.getClassLoader().getResourceAsStream("banner.txt"))) {
