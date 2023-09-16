@@ -1,3 +1,10 @@
 app:
   version: 0.0.1
   name: Mango Vanilla Coconut
+  port: 5000
+  datasource:
+    driver: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/dnlkk_db
+    username: dnlkk
+    password: dnlkkpass
+ruslan: ruslan
