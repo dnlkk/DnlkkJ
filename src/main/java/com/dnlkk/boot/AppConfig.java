@@ -7,6 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 
+import com.dnlkk.util.PathUtils;
+
 public class AppConfig {
     private static Map<String, Object> config;
     private static final Logger logger = LoggerFactory.getLogger(AppConfig.class);
@@ -23,11 +25,11 @@ public class AppConfig {
             return null;
         if (config.containsKey(key))
             return config.get(key).toString();
-        String[] keys = key.split("\\.");
-        if (keys.length == 0)
+        String[] keys = PathUtils.splitPath("\\.", key);
+        String nextKey = PathUtils.removeFirstPath(keys, key);
+        if (nextKey == null)
             return null;
-        String keyFirst = keys[0];
-        return findProperty((Map<String,Object>) config.get(keyFirst), key.substring(keyFirst.length() + 1));
+        return findProperty((Map<String,Object>) config.get(keys[0]), nextKey);
     }
 
     public static boolean loadConfig() {
