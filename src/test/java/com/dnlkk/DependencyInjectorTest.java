@@ -12,8 +12,6 @@ import org.junit.jupiter.api.Test;
 import com.dnlkk.DITest.DnlkkTestApp;
 import com.dnlkk.DITest.Dummy;
 import com.dnlkk.DITest.TestComponent;
-import com.dnlkk.dependency_injector.annotation_context.AnnotationApplicationContext;
-import com.dnlkk.dependency_injector.application_context.ApplicationContext;
 
 @DisplayName("Dependency Injector DnlkkApp Tests")
 public class DependencyInjectorTest {
