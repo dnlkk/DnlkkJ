@@ -31,7 +31,7 @@ public abstract class ApplicationContext implements PeaFactory, ComponentContain
         this.componentFactory.setDependencyInjector(dependencyInjector);
         this.injectDependencies(baseObject);
         Arrays.stream(baseObject.getClass().getMethods()).forEach(method -> {
-            if (method.getName() == "runApp")
+            if (method.getName().equals("runApp"))
                 try {
                     method.invoke(baseObject);
                 } catch (IllegalAccessException | InvocationTargetException e) {
@@ -45,6 +45,8 @@ public abstract class ApplicationContext implements PeaFactory, ComponentContain
         peaFactory.setPeas(this.configScanner.scan(basePackage));
         componentFactory.initComponents(basePackage);
         dependencyInjector.inject(target);
+        componentFactory.getComponents().values().stream()
+            .forEach(component -> dependencyInjector.inject(component));
     }
 
     @Override
@@ -85,5 +87,10 @@ public abstract class ApplicationContext implements PeaFactory, ComponentContain
     @Override
     public Object getComponent(String componentClass) {
         return componentFactory.getComponent(componentClass);
+    }
+
+    @Override
+    public Map<String, Object> getComponents() {
+        return componentFactory.getComponents();
     }
 }

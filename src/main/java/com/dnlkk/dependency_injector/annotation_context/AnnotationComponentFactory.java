@@ -49,7 +49,6 @@ public class AnnotationComponentFactory implements ComponentFactory {
 
                                     if (!clazz.isAnnotationPresent(Repository.class)) {
                                         componentInstance = createComponentInstance(clazz);
-                                        dependencyInjector.inject(componentInstance);
                                     } else 
                                         componentInstance = DnlkkRepositoryFactory.createRepositoryInstance(clazz);
 
