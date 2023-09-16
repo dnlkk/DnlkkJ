@@ -5,3 +5,6 @@ CREATE TABLE IF NOT EXISTS user_table
     name VARCHAR(36) NOT NULL,
     surname VARCHAR(36) NOT NULL
 );
+
+ALTER TABLE user_table 
+ALTER COLUMN earnings TYPE DECIMAL;

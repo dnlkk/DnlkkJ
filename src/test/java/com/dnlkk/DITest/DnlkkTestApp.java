@@ -1,5 +1,7 @@
 package com.dnlkk.DITest;
 
+import java.math.BigDecimal;
+
 import com.dnlkk.boot.annotations.ConfigValue;
 import com.dnlkk.dependency_injector.annotations.AutoInject;
 import com.dnlkk.dependency_injector.annotations.ConcreteInject;
@@ -63,7 +65,12 @@ public class DnlkkTestApp {
     @ConfigValue("app.version")
     private String version;
 
+    @AutoInject
+    private MyService myService;
+
     public void runApp() {
+        System.out.println(myService);
+
         System.out.println(myComponent);
         myComponent.doSomething();
 
@@ -108,19 +115,29 @@ public class DnlkkTestApp {
         User user = repo.findById(1);
         System.out.println(user);
         user.setName("Ruslan");
-        repo.save(user);
+        user.setEarnings(new BigDecimal(133.3));
         System.out.println(repo.save(user));
 
         User userNew = new User();
-        userNew.setName("toki");
+        userNew.setId(8);
+        userNew.setName("Ruslan");
         userNew.setSurname("tuki");
+        userNew.setEarnings(new BigDecimal(22.3));
         System.out.println(userNew);
-        // System.out.println(repo.save(userNew));
+        System.out.println(repo.save(userNew));
         System.out.println(repo.findByNameAndSurnameOrId("toki", "tuki", 3));
         System.out.println(repo.findByName("toki"));
 
         System.out.println(repo.countByName("Ruslan"));
 
         System.out.println(version);
+
+        System.out.println(repo.testSelect(2));
+        System.out.println(repo.testSelect(2));
+        System.out.println(repo.testSelect(2));
+        System.out.println(repo.testSelect(2));
+        System.out.println(repo.testSelect(2));
+        System.out.println(repo.testSelect(2));
+        System.out.println(repo.sumEarningsByName("Ruslan"));
     }
 }
