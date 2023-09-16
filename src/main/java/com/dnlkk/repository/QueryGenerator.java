@@ -5,20 +5,27 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class QueryGenerator {
+
+    private static final Logger logger = LoggerFactory.getLogger(QueryGenerator.class);
+
     public static String generateQuery(Method method, String tableName, Class<?> valueClass) {
         String methodName = method.getName();
         String[] methodParts = methodName.split("(?=[A-Z])"); // Разбиваем имя метода по заглавным буквам
         StringBuilder query = new StringBuilder("");
 
-        System.out.println(Arrays.toString(methodParts));
+        logger.debug(Arrays.toString(methodParts));
+
         if (methodParts.length > 0) {
-            if (methodParts[0].equals("find"))
+            if (methodParts[0].equals(QueryOperation.FIND.getValue()))
                 query.append("SELECT * ");
-            else if (methodParts[0].equals("count"))
+            else if (methodParts[0].equals(QueryOperation.COUNT.getValue()))
                 query.append("SELECT COUNT(*) ");
-            else if (methodParts[0].equals("sum"))
-                query.append("SELECT SUM(*) ");
+            else if (methodParts[0].equals(QueryOperation.SUM.getValue()))
+                query.append("SELECT SUM(" + methodParts[1].toLowerCase() + ") ");
 
             query.append("FROM " + tableName);
             boolean whereClauseAdded = false;
@@ -44,19 +51,19 @@ public class QueryGenerator {
                 else if (part.equals("and")) {
                     query.append(" AND");
                 }
-                List<Field> list = Arrays.stream(fields).filter(field -> field.getName().toLowerCase().equals(part)).toList();
-                if (list.size() > 0) {
-                    int methodParameterIndex = Arrays.stream(fields).toList().indexOf(list.get(0));
-                    String paramName = valueClass.getDeclaredFields()[methodParameterIndex].getName();
-                    query.append(" " + paramName + " = ?");
-                    methodParameterIndex++;
+                if (whereClauseAdded) {
+                    List<Field> list = Arrays.stream(fields).filter(field -> field.getName().toLowerCase().equals(part)).toList();
+                    if (!list.isEmpty()) {
+                        int methodParameterIndex = Arrays.stream(fields).toList().indexOf(list.get(0));
+                        String paramName = valueClass.getDeclaredFields()[methodParameterIndex].getName();
+                        query.append(" " + paramName + " = ? ");
+                    }
                 }
             }
 
-            query.append(";");
-
-            System.out.println(query);
-            return query.toString();
+            String resultQuery = query.toString();
+            logger.debug(resultQuery);
+            return resultQuery;
         }
         return null;
     }
