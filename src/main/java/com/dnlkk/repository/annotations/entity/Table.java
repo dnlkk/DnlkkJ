@@ -1,4 +1,4 @@
-package com.dnlkk.dependency_injector.annotations.components;
+package com.dnlkk.repository.annotations.entity;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

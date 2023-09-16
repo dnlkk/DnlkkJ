@@ -2,7 +2,7 @@ package com.dnlkk.DITest;
 
 import java.math.BigDecimal;
 
-import com.dnlkk.dependency_injector.annotations.components.Table;
+import com.dnlkk.repository.annotations.entity.Table;
 
 import lombok.Data;
 

@@ -7,7 +7,7 @@ import java.lang.reflect.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.dnlkk.dependency_injector.annotations.components.Table;
+import com.dnlkk.repository.annotations.entity.Table;
 
 import lombok.Data;
 
