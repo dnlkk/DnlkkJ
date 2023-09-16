@@ -4,15 +4,20 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.dnlkk.dependency_injector.annotations.components.Table;
 
 import lombok.Data;
 
 @Data
 public class DnlkkRepositoryFactory {
-    public static <K, V> DnlkkRepository createRepositoryInstance(Class<?> clazz) {
+    private static final Logger logger = LoggerFactory.getLogger(DnlkkRepositoryFactory.class);
+
+    public static <K, V> DnlkkRepository<K, V> createRepositoryInstance(Class<?> clazz) {
         if (DnlkkRepository.class.isAssignableFrom(clazz)) {
-            RepositoryProxyHandler handler = new RepositoryProxyHandler();
+            RepositoryProxyHandler handler = new RepositoryProxyHandler(clazz);
             String tableName = extractTableNameFromEntityClass(getValueClass(clazz));
             handler.setTableName(tableName);
             handler.setKeyClass(getKeyClass(clazz));
@@ -20,8 +25,10 @@ public class DnlkkRepositoryFactory {
             
             try {
                 DnlkkRepository proxyObject = (DnlkkRepository) Proxy.newProxyInstance( clazz.getClassLoader(), new Class[]{clazz, DnlkkRepository.class}, handler);
-                if (proxyObject == null)
+                if (proxyObject == null) {
+                    logger.error("Repository creation failed");
                     throw new Exception("Repository creation failed");
+                }
                 else 
                     return proxyObject; 
             } catch (Exception e) {
@@ -29,6 +36,7 @@ public class DnlkkRepositoryFactory {
                 System.exit(1);
             }
         }
+        logger.error("Not a repository");
         throw new IllegalArgumentException("Not a repository.");
     }
 
@@ -38,6 +46,7 @@ public class DnlkkRepositoryFactory {
         if (tableAnnotation != null) 
             return tableAnnotation.value();
     
+        logger.error("No @Table annotation found on the entity class");
         throw new IllegalArgumentException("No @Table annotation found on the entity class.");
     }
 
@@ -49,6 +58,7 @@ public class DnlkkRepositoryFactory {
             Class<K> keyClass = (Class<K>) typeArguments[0];
             return keyClass;
         }
+        logger.error("Unable to determine the key type");
         throw new IllegalArgumentException("Unable to determine the key type.");
     }
 
@@ -60,6 +70,7 @@ public class DnlkkRepositoryFactory {
             Class<V> valueClass = (Class<V>) typeArguments[1];
             return valueClass;
         }
+        logger.error("Unable to determine the value type");
         throw new IllegalArgumentException("Unable to determine the value type.");
     }
 }
