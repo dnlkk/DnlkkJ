@@ -1,13 +1,18 @@
 package com.dnlkk;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.dnlkk.boot.AppConfig;
 import com.dnlkk.boot.annotations.DnlkkApp;
 import com.dnlkk.boot.annotations.DnlkkWeb;
+import com.dnlkk.controller.DispatcherServlet;
+import com.dnlkk.controller.FrontController;
 import com.dnlkk.dependency_injector.annotation_context.AnnotationApplicationContext;
+import com.dnlkk.dependency_injector.annotations.components.RestController;
 import com.dnlkk.dependency_injector.application_context.ApplicationContext;
 
 public class DnlkkApplication {
@@ -25,7 +30,19 @@ public class DnlkkApplication {
     private Object run(String[] args) {
         try {
             Object app = primarySource.getConstructor().newInstance();
-            this.applicationContextClass.getConstructor(Object.class).newInstance(app);
+            ApplicationContext applicationContext = this.applicationContextClass.getConstructor(Object.class).newInstance(app);
+
+            DispatcherServlet dispatcherServlet = new DispatcherServlet();
+            applicationContext.getComponents().values().forEach(component -> {
+                System.out.println(component);
+                System.out.println(Arrays.toString(component.getClass().getAnnotations()));
+                if (component.getClass().isAnnotationPresent(RestController.class))
+                    dispatcherServlet.getControllerRegistry().registerController(component.getClass().getAnnotation(RestController.class).value(), component);
+            });
+            System.out.println(applicationContext.getComponents());
+            System.out.println(dispatcherServlet.getControllerRegistry().getControllers());
+            new FrontController(dispatcherServlet);
+
             return primarySource.cast(app);
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
                 | NoSuchMethodException | SecurityException e) {
