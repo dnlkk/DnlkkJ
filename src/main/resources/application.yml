@@ -1,6 +1,6 @@
 app:
-  version: 0.0.1
-  name: Mango Vanilla Coconut
+  version: 0.0.2
+  name: Turnip's Repo
   port: 5000
   datasource:
     driver: org.postgresql.Driver
