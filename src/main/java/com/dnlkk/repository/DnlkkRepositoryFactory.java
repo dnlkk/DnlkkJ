@@ -3,11 +3,13 @@ package com.dnlkk.repository;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
+import java.util.Arrays;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.dnlkk.repository.annotations.entity.Table;
+import com.dnlkk.util.EntityUtils;
 
 import lombok.Data;
 
@@ -22,6 +24,7 @@ public class DnlkkRepositoryFactory {
             handler.setTableName(tableName);
             handler.setKeyClass(getKeyClass(clazz));
             handler.setValueClass(getValueClass(clazz));
+            handler.setReferences(Arrays.stream(handler.getValueClass().getDeclaredFields()).filter(field -> !EntityUtils.isNotRelation(field)).toList());
             
             try {
                 DnlkkRepository proxyObject = (DnlkkRepository) Proxy.newProxyInstance( clazz.getClassLoader(), new Class[]{clazz, DnlkkRepository.class}, handler);
