@@ -6,13 +6,19 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import com.dnlkk.repository.annotations.entity.Column;
-import com.dnlkk.repository.annotations.entity.Id;
+import com.dnlkk.repository.annotations.entity.FK;
+import com.dnlkk.repository.annotations.entity.PK;
+import com.dnlkk.repository.annotations.entity.Table;
 import com.dnlkk.repository.annotations.entity.ManyToMany;
 import com.dnlkk.repository.annotations.entity.ManyToOne;
 import com.dnlkk.repository.annotations.entity.OneToMany;
 import com.dnlkk.repository.annotations.entity.OneToOne;
 
 public class EntityUtils {
+    public static String getTableName(Class<?> clazz) {
+        return clazz.getAnnotation(Table.class).value();
+    }
+
     public static String getRelationIdField(Class<?> clazz) {
         Optional<Field> optIdField = Arrays.stream(clazz.getDeclaredFields())
             .filter(field -> field.isAnnotationPresent(ManyToOne.class) || field.isAnnotationPresent(OneToOne.class)).findFirst();
@@ -25,16 +31,15 @@ public class EntityUtils {
 
     public static String getRelationIdFieldName(Class<?> clazz) {
         Optional<Field> optIdField = Arrays.stream(clazz.getDeclaredFields())
-            .filter(field -> field.isAnnotationPresent(Id.class)).findFirst();
+            .filter(field -> field.isAnnotationPresent(PK.class)).findFirst();
         if (optIdField.isEmpty())
             throw new RuntimeException("@Id must be in entity");
         return getColumnName(optIdField.get());
-    }
-    
+    }    
 
     public static Field getIdField(Class<?> clazz) {
         Optional<Field> optIdField = Arrays.stream(clazz.getDeclaredFields())
-            .filter(field -> field.isAnnotationPresent(Id.class)).findFirst();
+            .filter(field -> field.isAnnotationPresent(PK.class)).findFirst();
         if (optIdField.isEmpty())
             throw new RuntimeException("@Id must be in entity");
         return optIdField.get();
@@ -49,12 +54,16 @@ public class EntityUtils {
 
     public static Stream<String> getColumnNameStream(Class<?> valueClass) {
         return (Stream<String>) Arrays.stream(valueClass.getDeclaredFields())
-            .filter(field -> isNotId(field) && isNotRelation(field))
+            .filter(field -> isNotPK(field) && isNotFK(field))
             .map(EntityUtils::getColumnName);
     }
 
-    public static boolean isNotId(Field field) {
-        return !field.isAnnotationPresent(Id.class);
+    public static boolean isNotPK(Field field) {
+        return !field.isAnnotationPresent(PK.class);
+    }
+
+    public static boolean isNotFK(Field field) {
+        return !field.isAnnotationPresent(FK.class);
     }
 
     public static boolean isNotRelation(Field field) {
