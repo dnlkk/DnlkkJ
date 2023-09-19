@@ -1,11 +1,8 @@
 package com.dnlkk.dependency_injector.annotation_context;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.URL;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -15,6 +12,7 @@ import com.dnlkk.dependency_injector.annotations.Pea;
 import com.dnlkk.dependency_injector.application_context.ConfigScanner;
 import com.dnlkk.dependency_injector.config.Config;
 import com.dnlkk.dependency_injector.config.PeaObject;
+import com.dnlkk.util.ScannerUtils;
 
 import lombok.Data;
 
@@ -28,37 +26,15 @@ public class AnnotationConfigScanner implements ConfigScanner {
 
     @Override
     public Set<Class<?>> findConfigClasses(String basePackage) {
-        String basePackagePath = basePackage.replace('.', '/');
-
         try {
-            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-            Enumeration<URL> resources = classLoader.getResources(basePackagePath);
-
-            while (resources.hasMoreElements()) {
-                URL resource = resources.nextElement();
-                if (resource.getProtocol().equals("file")) {
-                    File packageDir = new File(resource.getFile());
-                    File[] files = packageDir.listFiles();
-                    // TODO: работать с классами. вытащить из пакета только класса без файлов
-                    if (files != null) {
-                        for (File file : files) {
-                            if (file.isFile() && file.getName().endsWith(".class")) {
-                                String className = basePackage + "." + file.getName().replace(".class", "");
-                                Class<?> clazz = Class.forName(className);
-
-                                if (clazz.isAnnotationPresent(Config.class)) {
-                                    this.configClasses.add(clazz);
-                                }
-                            }
-                        }
-                    }
+            for (Class<?> clazz : ScannerUtils.findClassesFromDirectory(basePackage)) {
+                if (clazz.isAnnotationPresent(Config.class)) {
+                    this.configClasses.add(clazz);
                 }
             }
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
+        } catch (ClassNotFoundException | IOException e) {
             throw new RuntimeException("Failed to scan for @Config classes.");
         }
-
         return configClasses;
     }
 
@@ -107,6 +83,5 @@ public class AnnotationConfigScanner implements ConfigScanner {
             }
         }
         return peas;
-    }
-    
+    }    
 }

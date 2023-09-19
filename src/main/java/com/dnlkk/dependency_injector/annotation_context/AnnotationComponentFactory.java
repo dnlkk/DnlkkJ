@@ -1,10 +1,7 @@
 package com.dnlkk.dependency_injector.annotation_context;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.net.URL;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -15,6 +12,7 @@ import com.dnlkk.dependency_injector.annotations.components.RestController;
 import com.dnlkk.dependency_injector.annotations.components.Service;
 import com.dnlkk.dependency_injector.application_context.ComponentFactory;
 import com.dnlkk.repository.DnlkkRepositoryFactory;
+import com.dnlkk.util.ScannerUtils;
 
 import lombok.Data;
 
@@ -25,42 +23,20 @@ public class AnnotationComponentFactory implements ComponentFactory {
 
     @Override
     public void initComponents(String basePackage) {
-        String basePackagePath = basePackage.replace('.', '/');
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-
         try {
-            Enumeration<URL> resources = classLoader.getResources(basePackagePath);
+            for (Class<?> clazz : ScannerUtils.findClassesFromDirectory(basePackage)) {
+                if (isComponentClass(clazz)) {
+                    Object componentInstance = null;
 
-            while (resources.hasMoreElements()) {
-                URL resource = resources.nextElement();
+                    if (!clazz.isAnnotationPresent(Repository.class))
+                        componentInstance = createComponentInstance(clazz);
+                    else 
+                        componentInstance = DnlkkRepositoryFactory.createRepositoryInstance(clazz);
 
-                if (resource.getProtocol().equals("file")) {
-                    File packageDir = new File(resource.getFile());
-                    File[] files = packageDir.listFiles();
-
-                    if (files != null) {
-                        for (File file : files) {
-                            if (file.isFile() && file.getName().endsWith(".class")) {
-                                String className = basePackage + "." + file.getName().replace(".class", "");
-                                Class<?> clazz = Class.forName(className);
-
-                                if (isComponentClass(clazz)) {
-                                    Object componentInstance = null;
-
-                                    if (!clazz.isAnnotationPresent(Repository.class)) {
-                                        componentInstance = createComponentInstance(clazz);
-                                    } else 
-                                        componentInstance = DnlkkRepositoryFactory.createRepositoryInstance(clazz);
-
-                                    components.put(clazz.getSimpleName(), componentInstance);
-                                }
-                            }
-                        }
-                    }
+                    components.put(clazz.getSimpleName(), componentInstance);
                 }
             }
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
+        } catch (ClassNotFoundException | IOException e) {
             throw new RuntimeException("Failed to scan for components.");
         }
     }
