@@ -1,4 +1,4 @@
-package com.dnlkk.DITest;
+package com.dnlkk.DITest.logic;
 
 import com.dnlkk.dependency_injector.annotations.AutoInject;
 import com.dnlkk.dependency_injector.annotations.components.Component;

@@ -1,8 +1,16 @@
 package com.dnlkk.DITest;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
+import com.dnlkk.DITest.logic.Component;
+import com.dnlkk.DITest.logic.MyComponent;
+import com.dnlkk.DITest.logic.TestComponent;
+import com.dnlkk.DITest.model.User;
+import com.dnlkk.DITest.model.UserOperation;
+import com.dnlkk.DITest.repository.TestRepository;
+import com.dnlkk.DITest.service.MyService;
 import com.dnlkk.boot.annotations.ConfigValue;
 import com.dnlkk.dependency_injector.annotations.AutoInject;
 import com.dnlkk.dependency_injector.annotations.ConcreteInject;
@@ -122,7 +130,26 @@ public class DnlkkTestApp {
         userNew.setId(8);
         userNew.setName("Ruslan");
         userNew.setSurname("tuki");
-        userNew.setAge(2);
+        userNew.setAge(3);
+        UserOperation userOperation1 = new UserOperation();
+        userOperation1.setAmount(new BigDecimal(4742));
+        userOperation1.setOperationId(4);
+        userOperation1.setFrom(userNew);
+        userOperation1.setTo(repo.findById(2));
+
+        UserOperation userOperation2 = new UserOperation();
+        userOperation2.setAmount(BigDecimal.valueOf(33.47));
+        userOperation2.setOperationId(5);
+        userOperation2.setFrom(userNew);
+        userOperation2.setTo(repo.findById(9));
+        userNew.setUserFromOperations(List.of(userOperation1, userOperation2));
+
+        UserOperation userOperation3 = new UserOperation();
+        userOperation3.setAmount(BigDecimal.valueOf(1.22));
+        userOperation3.setOperationId(20);
+        userOperation3.setFrom(userNew);
+        userOperation3.setTo(repo.findById(1));
+        userNew.setUserFromOperations(List.of(userOperation1, userOperation2, userOperation3));
         System.out.println("entity");
         System.out.println(userNew);
         System.out.println(repo.save(userNew));

@@ -1,8 +1,9 @@
-package com.dnlkk.DITest;
+package com.dnlkk.DITest.repository;
 
 import java.math.BigDecimal;
 import java.util.List;
 
+import com.dnlkk.DITest.model.User;
 import com.dnlkk.dependency_injector.annotations.components.Repository;
 import com.dnlkk.repository.DnlkkRepository;
 import com.dnlkk.repository.annotations.Param;

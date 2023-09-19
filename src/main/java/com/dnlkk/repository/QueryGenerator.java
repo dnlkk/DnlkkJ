@@ -45,7 +45,7 @@ public class QueryGenerator {
                 String part = methodParts[i].toLowerCase();
                 
                 if (part.equals("all")) {
-                    continue; // Пропускаем "All"
+                    continue;
                 }
                 else if (part.equals("by")) {
                     if (!whereClauseAdded) {

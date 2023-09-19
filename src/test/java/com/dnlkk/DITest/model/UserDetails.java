@@ -1,4 +1,4 @@
-package com.dnlkk.DITest;
+package com.dnlkk.DITest.model;
 
 import com.dnlkk.repository.annotations.entity.Column;
 import com.dnlkk.repository.annotations.entity.PK;

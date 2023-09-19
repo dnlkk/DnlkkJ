@@ -2,7 +2,7 @@ package com.dnlkk.DITest.dtos;
 
 import java.util.List;
 
-import com.dnlkk.DITest.User;
+import com.dnlkk.DITest.model.User;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

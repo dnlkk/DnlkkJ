@@ -10,8 +10,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import com.dnlkk.DITest.DnlkkTestApp;
-import com.dnlkk.DITest.Dummy;
-import com.dnlkk.DITest.TestComponent;
+import com.dnlkk.DITest.logic.Dummy;
+import com.dnlkk.DITest.logic.TestComponent;
 
 @DisplayName("Dependency Injector DnlkkApp Tests")
 public class DependencyInjectorTest {

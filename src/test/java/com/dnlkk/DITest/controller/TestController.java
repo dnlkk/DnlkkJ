@@ -1,6 +1,7 @@
-package com.dnlkk.DITest;
+package com.dnlkk.DITest.controller;
 
 import com.dnlkk.DITest.dtos.UsersDTO;
+import com.dnlkk.DITest.service.MyService;
 import com.dnlkk.controller.annotations.Get;
 import com.dnlkk.controller.annotations.RequestMapping;
 import com.dnlkk.controller.responses.ResponseEntity;

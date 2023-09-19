@@ -1,4 +1,4 @@
-package com.dnlkk.DITest;
+package com.dnlkk.DITest.model;
 
 import org.checkerframework.checker.units.qual.C;
 

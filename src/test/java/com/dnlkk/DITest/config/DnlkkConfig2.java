@@ -1,5 +1,7 @@
-package com.dnlkk.DITest;
+package com.dnlkk.DITest.config;
 
+import com.dnlkk.DITest.logic.Bobby;
+import com.dnlkk.DITest.logic.DnlkkComponent;
 import com.dnlkk.dependency_injector.annotations.Pea;
 import com.dnlkk.dependency_injector.config.Config;
 
