@@ -2,7 +2,8 @@ package com.dnlkk.DITest;
 
 import java.util.List;
 
-import com.dnlkk.repository.annotations.entity.Id;
+import com.dnlkk.repository.annotations.entity.PK;
+import com.dnlkk.repository.annotations.entity.FK;
 import com.dnlkk.repository.annotations.entity.OneToMany;
 import com.dnlkk.repository.annotations.entity.OneToOne;
 import com.dnlkk.repository.annotations.entity.Table;
@@ -12,22 +13,26 @@ import lombok.Data;
 @Table("user_table")
 @Data
 public class User {
-    @Id
+    @PK
     private Integer id;
     private String name;
     private String surname;
     private Integer age;
 
     @OneToMany
+    @FK
     private List<UserOperation> userFromOperations;
 
     @OneToMany
+    @FK
     private List<UserOperation> userToOperations;
 
     @OneToMany
+    @FK
     private List<UserDoing> userDoings;
 
     @OneToOne()
+    @FK
     private UserDetails userDetails;
 
     @Override

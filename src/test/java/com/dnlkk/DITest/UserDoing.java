@@ -3,7 +3,7 @@ package com.dnlkk.DITest;
 import org.checkerframework.checker.units.qual.C;
 
 import com.dnlkk.repository.annotations.entity.Column;
-import com.dnlkk.repository.annotations.entity.Id;
+import com.dnlkk.repository.annotations.entity.PK;
 import com.dnlkk.repository.annotations.entity.ManyToOne;
 import com.dnlkk.repository.annotations.entity.Table;
 
@@ -12,7 +12,7 @@ import lombok.Data;
 @Table("user_doings_table")
 @Data
 public class UserDoing {
-    @Id
+    @PK
     @Column("doings_id")
     private Integer id;
     private String doing;

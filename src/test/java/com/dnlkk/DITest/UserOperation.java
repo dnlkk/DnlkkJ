@@ -3,7 +3,7 @@ package com.dnlkk.DITest;
 import java.math.BigDecimal;
 
 import com.dnlkk.repository.annotations.entity.Column;
-import com.dnlkk.repository.annotations.entity.Id;
+import com.dnlkk.repository.annotations.entity.PK;
 import com.dnlkk.repository.annotations.entity.ManyToOne;
 import com.dnlkk.repository.annotations.entity.Table;
 
@@ -12,7 +12,7 @@ import lombok.Data;
 @Data
 @Table("user_operation_table")
 public class UserOperation {
-    @Id
+    @PK
     @Column("operation_id")
     private Integer operationId;
 

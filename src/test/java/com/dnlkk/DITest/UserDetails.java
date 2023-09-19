@@ -1,7 +1,7 @@
 package com.dnlkk.DITest;
 
 import com.dnlkk.repository.annotations.entity.Column;
-import com.dnlkk.repository.annotations.entity.Id;
+import com.dnlkk.repository.annotations.entity.PK;
 import com.dnlkk.repository.annotations.entity.OneToOne;
 import com.dnlkk.repository.annotations.entity.Table;
 
@@ -10,7 +10,7 @@ import lombok.Data;
 @Data
 @Table("user_details_table")
 public class UserDetails {
-    @Id
+    @PK
     @Column("details_id")
     private long id;
 
