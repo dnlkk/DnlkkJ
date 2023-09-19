@@ -5,24 +5,40 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.sql.DataSource;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.yaml.snakeyaml.tokens.Token.ID;
 
 import com.dnlkk.dependency_injector.DependencyInjector;
 import com.dnlkk.repository.annotations.Param;
 import com.dnlkk.repository.annotations.Query;
+import com.dnlkk.repository.annotations.entity.Column;
+import com.dnlkk.repository.annotations.entity.Id;
+import com.dnlkk.repository.annotations.entity.ManyToMany;
+import com.dnlkk.repository.annotations.entity.ManyToOne;
+import com.dnlkk.repository.annotations.entity.OneToMany;
+import com.dnlkk.repository.annotations.entity.OneToOne;
+import com.dnlkk.repository.annotations.entity.Table;
 import com.dnlkk.repository.dnlkk_connection_pool.DnlkkDataSourceFactory;
+import com.dnlkk.util.EntityUtils;
 import com.dnlkk.util.SQLQueryUtil;
 
 import lombok.Data;
@@ -34,12 +50,15 @@ public class RepositoryProxyHandler implements InvocationHandler {
     private Class<?> keyClass;
     private Class<?> valueClass;
     private Class<?> repositoryInterface;
+    private List<Field> references;
 
     private final Logger logger = LoggerFactory.getLogger(RepositoryProxyHandler.class);
 
     public RepositoryProxyHandler(Class<?> clazz) {
         repositoryInterface = clazz;
         this.dataSource = DnlkkDataSourceFactory.createDataSource();
+
+        references = new ArrayList<>();
     }
 
     @Override
@@ -49,9 +68,9 @@ public class RepositoryProxyHandler implements InvocationHandler {
             result = execute(method.getAnnotation(Query.class).value(), args, method.getParameters());
         }
         else if (method.getName().startsWith(QueryOperation.FIND.getValue())) {
-            result = executeFind(QueryGenerator.generateQuery(method, tableName, valueClass), args);
+            result = executeFind(QueryGenerator.generateQuery(method, tableName, valueClass, references), args);
         } else if (method.getName().startsWith(QueryOperation.COUNT.getValue()) || method.getName().startsWith(QueryOperation.SUM.getValue())) {
-            String sql = QueryGenerator.generateQuery(method, tableName, valueClass);
+            String sql = QueryGenerator.generateQuery(method, tableName, valueClass, references);
             return executeCount(sql, args);
         } else if (method.getName().equals(QueryOperation.SAVE.getValue())) {
             return save(args[0]);
@@ -88,8 +107,11 @@ public class RepositoryProxyHandler implements InvocationHandler {
 
         String[] queryParameters = SQLQueryUtil.getParamsFromQuery(sqlWithParams);
         String sql = SQLQueryUtil.removeParamsFromQuery(sqlWithParams, queryParameters);
+        sql = sql.replace("WHERE", QueryGenerator.getReferencesJoin(references, tableName) + " WHERE");
         logger.debug(Arrays.toString(queryParameters));
         logger.debug(sql);
+
+        Object id;
 
         try (Connection connection = dataSource.getConnection()) {
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -112,24 +134,121 @@ public class RepositoryProxyHandler implements InvocationHandler {
     }
 
     public List<Object> statementListExecutor(PreparedStatement statement) throws SQLException {
-        List<Object> resultFunction = new ArrayList<>(); 
+        List<Object> resultFunction = new ArrayList<>();
+        Object id = null; // TODO: id check
+        boolean idChange = false;
+
+        Map<String, List<Object>> oneToMany = new HashMap<>();
+        Map<String, List<Object>> oneToManyIds = new HashMap<>();
+        Map<String, List<Object>> entityToKeyMap = new HashMap<>();
+        Map<Object, Object> entityToIdMap = new HashMap<>();
+        
+        Object entity = null;
+        Field[] fields = null;
+        try {
+            entity = valueClass.getConstructor().newInstance();
+            fields = valueClass.getDeclaredFields();
+        } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
+                | NoSuchMethodException | SecurityException e) {
+            e.printStackTrace();
+        }
+
         try (ResultSet resultSet = statement.executeQuery()) {
             while (resultSet.next()) {
-                // Создание объекта на основе данных из resultSet
                 try {
-                    Object entity = valueClass.getConstructor().newInstance();
-                    Field[] fields = valueClass.getDeclaredFields();
                     for (Field field : fields) {
-                        Object retrievedObject = resultSet.getObject(field.getName());
-                        DependencyInjector.setField(entity, retrievedObject, field);
+                        if (!EntityUtils.isNotId(field)) {
+                            Object newId = resultSet.getObject(EntityUtils.getColumnName(field));
+                            if (id == null || !id.equals(newId)) {
+                                id = newId;
+                                idChange = true;
+                                entity = valueClass.getConstructor().newInstance();
+                                for (Field field2 : fields) {
+                                    if (!EntityUtils.isNotRelation(field2) && oneToMany.get(String.format("%s%s", id.toString(), field2.getName())) == null){
+                                        oneToMany.put(String.format("%s%s", id.toString(), field2.getName()), new ArrayList<>());
+                                    }
+                                }
+                            } else {
+                                idChange = false;
+                            }
+                        }
+
+                        if (EntityUtils.isNotRelation(field)){
+                            Object retrievedObject = resultSet.getObject(EntityUtils.getColumnName(field));
+                            DependencyInjector.setField(entity, retrievedObject, field);
+                        }
+                        else if (field.isAnnotationPresent(OneToMany.class)) {
+                            Class<?> relationClazz = (Class) ((ParameterizedType) field.getGenericType()).getActualTypeArguments()[0];
+                            Object relationEntity = relationClazz.getDeclaredConstructor().newInstance();
+                            Object relationFromId = null;
+
+                            for (Field relationField : relationClazz.getDeclaredFields()) {
+                                if (EntityUtils.isNotRelation(relationField)) {
+                                    Object retrievedObject = resultSet.getObject(EntityUtils.getColumnName(relationField));
+                                    
+                                    DependencyInjector.setField(relationEntity, retrievedObject, relationField);
+                                } else if (relationField.isAnnotationPresent(ManyToOne.class)) {
+                                    Object retrievedObject = resultSet.getObject(EntityUtils.getColumnName(relationField));
+                                    relationFromId = retrievedObject;
+                                    
+                                    if (relationFromId != null) {
+                                        String relationKey = String.format("%s%s", relationFromId.toString(), field.getName());
+                                        if (oneToMany.get(relationKey) == null)
+                                            oneToMany.put(relationKey, new ArrayList<>());
+                                        if (relationField.getAnnotation(ManyToOne.class).value().equals(field.getName()) && !oneToMany.get(relationKey).contains(relationEntity))
+                                            oneToMany.get(relationKey).add(relationEntity);
+                                    }
+                                }
+                            }
+                            List<Object> list = oneToMany.get(String.format("%s%s", id.toString(), field.getName()));
+
+                            DependencyInjector.setField(entity, list, field);
+                            System.out.println(oneToMany);
+                        }
                     }
+                    if (idChange){
+                        entityToIdMap.put(entity, id);
                         resultFunction.add(entity);
+                    }
                 } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
                         | InvocationTargetException | NoSuchMethodException | SecurityException e) {
                     e.printStackTrace();
                 }
+            }            
+        }
+        for (Object resultEntity : resultFunction) {
+            Object entityId = entityToIdMap.get(resultEntity);
+            for (Field fieldResultEntity : resultEntity.getClass().getDeclaredFields()) {
+                if (fieldResultEntity.isAnnotationPresent(OneToMany.class)) {
+                    Class<?> relationClazz = (Class) ((ParameterizedType) fieldResultEntity.getGenericType()).getActualTypeArguments()[0];
+
+                    String relationKey = String.format("%s%s", entityId.toString(), fieldResultEntity.getName());
+                    List<Object> list = oneToMany.get(relationKey);
+                    for (Field relationField : relationClazz.getDeclaredFields()) {
+                        if (relationField.isAnnotationPresent(ManyToOne.class)) {
+                            String relationKey3 = String.format("%s%s", entityId.toString(), relationField.getAnnotation(ManyToOne.class).value());
+                            System.out.println(relationKey);
+                            System.out.println(relationKey3);
+                            if (relationKey.equals(relationKey3)) {
+                                for (Object object : list) {
+                                    
+                                    for (Field relationField2 : relationClazz.getDeclaredFields()) {
+                                        if (relationField2.isAnnotationPresent(ManyToOne.class)) {
+                                            
+                                        }
+                                    }
+                                    System.out.println(object);
+                                    DependencyInjector.setField(object, resultEntity, relationField);
+                                }
+                            }
+                        }    
+                    }
+                    oneToMany.put(relationKey, list);
+                    DependencyInjector.setField(resultEntity, list, fieldResultEntity);
+                }
             }
         }
+        System.out.println(oneToMany);
         return resultFunction;
     }
 
@@ -150,7 +269,8 @@ public class RepositoryProxyHandler implements InvocationHandler {
     }
     
     public Object executeSelectByIdQuery(Object id) throws SQLException {
-        String sql = "SELECT * FROM " + tableName + " WHERE id = ?";
+        Field idField = EntityUtils.getIdField(valueClass);
+        String sql = "SELECT * FROM " + tableName + " WHERE " + EntityUtils.getColumnName(idField) + " = ?";
             
         try (Connection connection = dataSource.getConnection()) {
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -162,8 +282,10 @@ public class RepositoryProxyHandler implements InvocationHandler {
 
                             Field[] fields = valueClass.getDeclaredFields();
                             for (Field field : fields) {
-                                Object retrievedObject = resultSet.getObject(field.getName());
-                                DependencyInjector.setField(entity, retrievedObject, field);
+                                if (EntityUtils.isNotRelation(field)){
+                                    Object retrievedObject = resultSet.getObject(field.getName());
+                                    DependencyInjector.setField(entity, retrievedObject, field);
+                                }
                             }
                             return entity;
                         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
@@ -180,14 +302,18 @@ public class RepositoryProxyHandler implements InvocationHandler {
     }
     
     public Object save(Object entity) {
-        String sql = "INSERT INTO " + tableName + " (name, surname, earnings) VALUES (?, ?, ?)";
+        String entityFields = EntityUtils.getColumnNameStream(valueClass)
+            .collect(Collectors.joining(","));
+        String sql = "INSERT INTO " + tableName + " (" + entityFields + ") VALUES (" + EntityUtils.generateQuestionMarks(entityFields) + ")";
 
         try {
-            Field idField = entity.getClass().getDeclaredField("id");
+            Field idField = EntityUtils.getIdField(valueClass);
             idField.setAccessible(true);
             Object id = idField.get(entity);
             if (executeSelectByIdQuery(id) != null){
-                sql = "UPDATE " + tableName + " SET name = ?, surname = ?, earnings = ? WHERE id = " + id;
+                entityFields = EntityUtils.getColumnNameStream(valueClass)
+            .collect(Collectors.joining(" = ?,")) + " = ?";
+                sql = "UPDATE " + tableName + " SET " + entityFields + " WHERE " + EntityUtils.getColumnName(idField) + " = " + id;
             }
    
             try (Connection connection = dataSource.getConnection()) {
@@ -195,10 +321,9 @@ public class RepositoryProxyHandler implements InvocationHandler {
                     int k = 1;
                     Field[] fields = entity.getClass().getDeclaredFields();
                     for (Field field : fields) {
-                        if (field.getName() != "id"){
+                        if (EntityUtils.isNotId(field) && EntityUtils.isNotRelation(field)){
                             field.setAccessible(true); 
                             Object fieldValue = field.get(entity);
-                            System.out.println(fieldValue);
                             statement.setObject(k, fieldValue);
                             k++;
                         }
@@ -209,7 +334,7 @@ public class RepositoryProxyHandler implements InvocationHandler {
             } catch (SQLException | IllegalAccessException e) {
                 e.printStackTrace();
             }
-        } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | SQLException | IllegalAccessException e) {
+        } catch (SecurityException | IllegalArgumentException | SQLException | IllegalAccessException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
