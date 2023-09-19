@@ -3,7 +3,6 @@ package com.dnlkk.dependency_injector;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
 
 import com.dnlkk.dependency_injector.annotations.ConcreteInject;
 import com.dnlkk.dependency_injector.annotations.lifecycle.Prototype;
@@ -24,7 +23,6 @@ public class DependencyInjector {
         if (dependencyInstance == null) {
             return false;
         }
-
         field.setAccessible(true);
         try {
             field.set(targetObject, dependencyInstance);

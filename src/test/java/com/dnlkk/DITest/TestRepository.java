@@ -12,9 +12,9 @@ import com.dnlkk.repository.annotations.Query;
 public interface TestRepository extends DnlkkRepository<Integer, User>{
     List<User> findByNameAndSurnameOrId(String name, String surname, Integer id);
     List<User> findByName(String name);
-    @Query("SELECT * FROM user_table WHERE id = :userId")
+    @Query("SELECT * FROM user_table WHERE user_table.id = :userId")
     List<User> testSelect(@Param("userId") Integer userId);
     Long countAll();
     Long countByName(String name);
-    BigDecimal sumEarningsByName(String name);
+    Long sumAgeByName(String name);
 }

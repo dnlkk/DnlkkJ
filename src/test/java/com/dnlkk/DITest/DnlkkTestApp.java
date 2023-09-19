@@ -1,6 +1,7 @@
 package com.dnlkk.DITest;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import com.dnlkk.boot.annotations.ConfigValue;
 import com.dnlkk.dependency_injector.annotations.AutoInject;
@@ -112,17 +113,17 @@ public class DnlkkTestApp {
 
         System.out.println(repo);
         System.out.println(repo.findAll());
-        User user = repo.findById(1);
-        System.out.println(user);
-        user.setName("Ruslan");
-        user.setEarnings(new BigDecimal(133.3));
-        System.out.println(repo.save(user));
+        // User user = repo.findById(1);
+        // System.out.println(user);
+        // user.setName("Ruslan");
+        // System.out.println(repo.save(user));
 
         User userNew = new User();
         userNew.setId(8);
         userNew.setName("Ruslan");
         userNew.setSurname("tuki");
-        userNew.setEarnings(new BigDecimal(22.3));
+        userNew.setAge(2);
+        System.out.println("entity");
         System.out.println(userNew);
         System.out.println(repo.save(userNew));
         System.out.println(repo.findByNameAndSurnameOrId("toki", "tuki", 3));
@@ -138,6 +139,13 @@ public class DnlkkTestApp {
         System.out.println(repo.testSelect(2));
         System.out.println(repo.testSelect(2));
         System.out.println(repo.testSelect(2));
-        System.out.println(repo.sumEarningsByName("Ruslan"));
+        System.out.println(repo.sumAgeByName("Ruslan"));
+        toPring(repo.findAll());
+    }
+
+    public static <T> void toPring(List<T> s) {
+        System.out.println("start findAll:");
+        s.stream().forEach(str -> System.out.println(str));
+        System.out.println("end findAll:");
     }
 }
