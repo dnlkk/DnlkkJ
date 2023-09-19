@@ -2,17 +2,22 @@ package com.dnlkk.repository;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.dnlkk.repository.annotations.entity.Table;
+import com.dnlkk.util.EntityUtils;
+
 public class QueryGenerator {
 
     private static final Logger logger = LoggerFactory.getLogger(QueryGenerator.class);
 
-    public static String generateQuery(Method method, String tableName, Class<?> valueClass) {
+    public static String generateQuery(Method method, String tableName, Class<?> valueClass, List<Field> references) {
         String methodName = method.getName();
         String[] methodParts = methodName.split("(?=[A-Z])"); // Разбиваем имя метода по заглавным буквам
         StringBuilder query = new StringBuilder("");
@@ -29,9 +34,10 @@ public class QueryGenerator {
 
             query.append("FROM " + tableName);
             boolean whereClauseAdded = false;
+
+            query.append(getReferencesJoin(references, tableName));
             
             Field[] fields = valueClass.getDeclaredFields();
-            // System.out.println(Arrays.toString(fields));
             
             for (int i = 0; i < methodParts.length; i++) {
                 String part = methodParts[i].toLowerCase();
@@ -56,7 +62,7 @@ public class QueryGenerator {
                     if (!list.isEmpty()) {
                         int methodParameterIndex = Arrays.stream(fields).toList().indexOf(list.get(0));
                         String paramName = valueClass.getDeclaredFields()[methodParameterIndex].getName();
-                        query.append(" " + paramName + " = ? ");
+                        query.append(" " + tableName + "." + paramName + " = ? ");
                     }
                 }
             }
@@ -66,5 +72,33 @@ public class QueryGenerator {
             return resultQuery;
         }
         return null;
+    }
+
+    public static String getReferencesJoin(List<Field> references, String tableName) {
+        StringBuilder builder = new StringBuilder(" ");
+        List<String> includedTableNames = new ArrayList<>();
+        if (!references.isEmpty()) {
+            String sourceKey = EntityUtils.getColumnName(EntityUtils.getIdField(references.get(0).getDeclaringClass()));
+
+            for (Field field : references) {
+                Class<?> targetClass = null;
+                
+                if (field.getType() == List.class)
+                    targetClass = (Class) ((ParameterizedType) field.getGenericType()).getActualTypeArguments()[0];
+                else
+                    targetClass = (Class<?>) field.getGenericType();
+
+                String targetTableName = targetClass.getAnnotation(Table.class).value();
+                
+                if (includedTableNames.contains(targetTableName))
+                 continue;
+
+                String targetKey = EntityUtils.getRelationIdFieldName(targetClass);
+
+                builder.append("LEFT JOIN " + targetTableName + " ON " + tableName + "."  + sourceKey + " = " + targetTableName + "." + targetKey + " ");
+                includedTableNames.add(targetTableName);
+            }
+        }
+        return builder.toString();
     }
 }
