@@ -16,6 +16,14 @@ public class UserDetails {
 
     private String email;
 
-    @OneToOne("details_user_id")
+    @OneToOne("userDetails")
+    @Column("details_user_id")
     private User user;
+
+    @Override
+    public String toString() {
+        return "UserDetails [id=" + id + ", email=" + email + ", user=" + (user == null ? "null" : user.getId()) + "]";
+    }
+
+    
 }

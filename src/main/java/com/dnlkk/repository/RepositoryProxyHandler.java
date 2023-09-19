@@ -138,7 +138,7 @@ public class RepositoryProxyHandler implements InvocationHandler {
         Object id = null; // TODO: id check
         boolean idChange = false;
 
-        Map<String, List<Object>> oneToMany = new HashMap<>();
+        Map<String, Object> oneToMany = new HashMap<>();
         Map<Object, Object> entityToIdMap = new HashMap<>();
         
         Object entity = null;
@@ -168,9 +168,8 @@ public class RepositoryProxyHandler implements InvocationHandler {
                                     entityToIdMap.put(id, entity);
                                 }
                                 for (Field field2 : fields) {
-                                    if (!EntityUtils.isNotRelation(field2) && oneToMany.get(String.format("%s%s", id.toString(), field2.getName())) == null){
-                                        oneToMany.put(String.format("%s%s", id.toString(), field2.getName()), new ArrayList<>());
-                                    }
+                                    if (!EntityUtils.isNotRelation(field2) && oneToMany.get(String.format("%s%s", id.toString(), field2.getName())) == null && !field2.isAnnotationPresent(OneToOne.class))
+                                            oneToMany.put(String.format("%s%s", id.toString(), field2.getName()), new ArrayList<>());
                                 }
                             } else {
                                 idChange = false;
@@ -181,8 +180,13 @@ public class RepositoryProxyHandler implements InvocationHandler {
                             Object retrievedObject = resultSet.getObject(EntityUtils.getColumnName(field));
                             DependencyInjector.setField(entity, retrievedObject, field);
                         }
-                        else if (field.isAnnotationPresent(OneToMany.class)) {
-                            Class<?> relationClazz = (Class) ((ParameterizedType) field.getGenericType()).getActualTypeArguments()[0];
+                        else if (field.isAnnotationPresent(OneToMany.class) || field.isAnnotationPresent(ManyToMany.class) || field.isAnnotationPresent(OneToOne.class)) {
+                            Class<?> relationClazz = null;
+                            if (field.isAnnotationPresent(OneToOne.class))
+                                relationClazz = field.getType();
+                            else
+                                relationClazz = (Class) ((ParameterizedType) field.getGenericType()).getActualTypeArguments()[0];
+                            
                             Object relationEntity = relationClazz.getDeclaredConstructor().newInstance();
                             Object relationFromId = null;
 
@@ -191,30 +195,48 @@ public class RepositoryProxyHandler implements InvocationHandler {
                                     Object retrievedObject = resultSet.getObject(EntityUtils.getColumnName(relationField));
                                     
                                     DependencyInjector.setField(relationEntity, retrievedObject, relationField);
-                                } else if (relationField.isAnnotationPresent(ManyToOne.class)) {
-                                    Object retrievedObject = resultSet.getObject(EntityUtils.getColumnName(relationField));
-                                    relationFromId = retrievedObject;
+                                } else if (relationField.isAnnotationPresent(ManyToOne.class) || field.isAnnotationPresent(ManyToMany.class) || field.isAnnotationPresent(OneToOne.class)) {
+                                    relationFromId = resultSet.getObject(EntityUtils.getColumnName(relationField));
                                     
                                     if (relationFromId != null) { 
                                         Object relationEntityManyToOne = null;
                                         if (entityToIdMap.containsKey(relationFromId)) {
-                                            relationEntityManyToOne = entityToIdMap.get(relationFromId);
+                                            if (field.isAnnotationPresent(ManyToMany.class))
+                                                 ((List<Object>) entityToIdMap.get(relationFromId)).add(relationEntityManyToOne);
+                                            else
+                                                relationEntityManyToOne = entityToIdMap.get(relationFromId);
                                         } else {
-                                            relationEntityManyToOne = valueClass.getConstructor().newInstance();
-                                            entityToIdMap.put(relationFromId, relationEntityManyToOne);
+                                            if (field.isAnnotationPresent(ManyToMany.class)) {
+                                                entityToIdMap.put(relationFromId, new ArrayList<>());
+                                                ((List<Object>) entityToIdMap.get(relationFromId)).add(relationEntityManyToOne);
+                                            }
+                                            else{
+                                                relationEntityManyToOne = valueClass.getConstructor().newInstance();
+                                                entityToIdMap.put(relationFromId, relationEntityManyToOne);
+                                            }
                                         }
                                         DependencyInjector.setField(relationEntity, relationEntityManyToOne, relationField);
                                         
                                         String relationKey = String.format("%s%s", relationFromId.toString(), field.getName());
-                                        if (oneToMany.get(relationKey) == null)
-                                            oneToMany.put(relationKey, new ArrayList<>());
-                                        if (relationField.getAnnotation(ManyToOne.class).value().equals(field.getName()) && !oneToMany.get(relationKey).contains(relationEntity))
-                                            oneToMany.get(relationKey).add(relationEntity);
+
+                                        
+                                        if (field.isAnnotationPresent(OneToOne.class)) {
+                                            if (oneToMany.get(relationKey) == null)
+                                                oneToMany.put(relationKey, relationEntity);
+                                        }
+                                        else {
+                                            if (oneToMany.get(relationKey) == null)
+                                                oneToMany.put(relationKey, new ArrayList<>());
+                                            if (((relationField.isAnnotationPresent(ManyToOne.class) && relationField.getAnnotation(ManyToOne.class).value().equals(field.getName()))
+                                            || (relationField.isAnnotationPresent(ManyToMany.class) && relationField.getAnnotation(ManyToMany.class).value().equals(field.getName()))) 
+                                            && !((List<Object>) oneToMany.get(relationKey)).contains(relationEntity))
+                                                ((List<Object>) oneToMany.get(relationKey)).add(relationEntity);
+                                        }
                                     }
                                 }
                             }
 
-                            List<Object> list = oneToMany.get(String.format("%s%s", id.toString(), field.getName()));
+                            Object list = oneToMany.get(String.format("%s%s", id.toString(), field.getName()));
 
                             DependencyInjector.setField(entity, list, field);
                         }

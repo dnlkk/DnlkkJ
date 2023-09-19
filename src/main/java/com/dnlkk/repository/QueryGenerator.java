@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.dnlkk.repository.annotations.entity.ManyToOne;
+import com.dnlkk.repository.annotations.entity.OneToOne;
 import com.dnlkk.repository.annotations.entity.Table;
 import com.dnlkk.util.EntityUtils;
 
@@ -96,7 +97,7 @@ public class QueryGenerator {
 
                  String targetKey = null;
                  for (Field targetField : targetClass.getDeclaredFields()) {
-                    if (targetField.isAnnotationPresent(ManyToOne.class) && targetField.getAnnotation(ManyToOne.class).value().equals(field.getName()))
+                    if ((targetField.isAnnotationPresent(OneToOne.class) && targetField.getAnnotation(OneToOne.class).value().equals(field.getName())) || (targetField.isAnnotationPresent(ManyToOne.class) && targetField.getAnnotation(ManyToOne.class).value().equals(field.getName())))
                         targetKey = EntityUtils.getColumnName(targetField);
                  }
 
