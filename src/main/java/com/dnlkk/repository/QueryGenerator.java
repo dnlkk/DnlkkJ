@@ -10,6 +10,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.dnlkk.repository.annotations.entity.ManyToOne;
 import com.dnlkk.repository.annotations.entity.Table;
 import com.dnlkk.util.EntityUtils;
 
@@ -28,9 +29,9 @@ public class QueryGenerator {
             if (methodParts[0].equals(QueryOperation.FIND.getValue()))
                 query.append("SELECT * ");
             else if (methodParts[0].equals(QueryOperation.COUNT.getValue()))
-                query.append("SELECT COUNT(*) ");
+                query.append("SELECT COUNT( DISTINCT " + EntityUtils.getRelationIdFieldName(valueClass) + " ) ");
             else if (methodParts[0].equals(QueryOperation.SUM.getValue()))
-                query.append("SELECT SUM(" + methodParts[1].toLowerCase() + ") ");
+                query.append("SELECT SUM( DISTINCT " + methodParts[1].toLowerCase() + ") ");
 
             query.append("FROM " + tableName);
             boolean whereClauseAdded = false;
@@ -93,7 +94,14 @@ public class QueryGenerator {
                 if (includedTableNames.contains(targetTableName))
                  continue;
 
-                String targetKey = EntityUtils.getRelationIdFieldName(targetClass);
+                 String targetKey = null;
+                 for (Field targetField : targetClass.getDeclaredFields()) {
+                    if (targetField.isAnnotationPresent(ManyToOne.class) && targetField.getAnnotation(ManyToOne.class).value().equals(field.getName()))
+                        targetKey = EntityUtils.getColumnName(targetField);
+                 }
+
+                if (targetKey == null)
+                    continue;
 
                 builder.append("LEFT JOIN " + targetTableName + " ON " + tableName + "."  + sourceKey + " = " + targetTableName + "." + targetKey + " ");
                 includedTableNames.add(targetTableName);
