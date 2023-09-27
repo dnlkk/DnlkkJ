@@ -5,17 +5,24 @@ import java.util.Map;
 
 import com.dnlkk.controller.http.HttpStatus;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
 
 @Data
 public class ResponseEntity<T> {
+	private static final ObjectMapper objectMapper = new ObjectMapper();
     private final Map<String, String> httpHeaders;
     private final T body;
 	private final HttpStatus status;
     
     public String json() {
-        return String.format("{\"data\":\"%s\"}", body.toString());
-    }
+		try {
+			return objectMapper.writeValueAsString(body);
+		} catch (JsonProcessingException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 	public ResponseEntity() {
 		this(null, null, HttpStatus.OK);
