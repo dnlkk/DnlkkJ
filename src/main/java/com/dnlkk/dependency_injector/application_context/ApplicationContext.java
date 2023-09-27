@@ -7,6 +7,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.dnlkk.boot.annotations.DnlkkApp;
 import com.dnlkk.dependency_injector.DependencyInjector;
 
 public abstract class ApplicationContext implements PeaFactory, ComponentContainer {
@@ -30,15 +31,18 @@ public abstract class ApplicationContext implements PeaFactory, ComponentContain
         this.componentFactory = componentFactory;
         this.componentFactory.setDependencyInjector(dependencyInjector);
         this.injectDependencies(baseObject);
-        Arrays.stream(baseObject.getClass().getMethods()).forEach(method -> {
-            if (method.getName().equals("runApp"))
-                try {
-                    method.invoke(baseObject);
-                } catch (IllegalAccessException | InvocationTargetException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
-        });
+
+        if (baseObject.getClass().isAnnotationPresent(DnlkkApp.class)) {
+            Arrays.stream(baseObject.getClass().getMethods()).forEach(method -> {
+                if (method.getName().equals("runApp"))
+                    try {
+                        method.invoke(baseObject);
+                    } catch (IllegalAccessException | InvocationTargetException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+            });
+        }
     }
 
     public void injectDependencies(Object target) {

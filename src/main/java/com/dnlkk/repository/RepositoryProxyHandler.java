@@ -75,6 +75,7 @@ public class RepositoryProxyHandler implements InvocationHandler {
     }
 
     // TODO: split method
+    // voice:.idea/1695822289179.wav
     public List<Object> statementListExecutor(PreparedStatement statement) throws SQLException {
         List<Object> resultFunction = new ArrayList<>();
         Object id = null; // TODO: id check

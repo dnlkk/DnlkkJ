@@ -1,6 +1,7 @@
 package com.dnlkk.boot;
 
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -26,7 +27,7 @@ public class AppConfig {
         if (config.containsKey(key))
             return config.get(key).toString();
         String[] keys = PathUtils.splitPath("\\.", key);
-        String nextKey = PathUtils.removeFirstPath(keys, key);
+        String nextKey = PathUtils.removeFirstPath(".", keys);
         if (nextKey == null)
             return null;
         return findProperty((Map<String,Object>) config.get(keys[0]), nextKey);

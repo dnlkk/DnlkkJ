@@ -1,11 +1,9 @@
-package com.dnlkk;
+package com.dnlkk.boot;
 
 import java.util.Scanner;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.dnlkk.boot.AppConfig;
 
 public class Banner {
     private static String banner;

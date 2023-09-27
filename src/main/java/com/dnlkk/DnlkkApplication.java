@@ -1,8 +1,8 @@
 package com.dnlkk;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
 
+import com.dnlkk.boot.Banner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,16 +32,14 @@ public class DnlkkApplication {
             Object app = primarySource.getConstructor().newInstance();
             ApplicationContext applicationContext = this.applicationContextClass.getConstructor(Object.class).newInstance(app);
 
-            DispatcherServlet dispatcherServlet = new DispatcherServlet();
-            applicationContext.getComponents().values().forEach(component -> {
-                System.out.println(component);
-                System.out.println(Arrays.toString(component.getClass().getAnnotations()));
-                if (component.getClass().isAnnotationPresent(RestController.class))
-                    dispatcherServlet.getControllerRegistry().registerController(component.getClass().getAnnotation(RestController.class).value(), component);
-            });
-            System.out.println(applicationContext.getComponents());
-            System.out.println(dispatcherServlet.getControllerRegistry().getControllers());
-            new FrontController(dispatcherServlet);
+            if (this.primarySource.isAnnotationPresent(DnlkkWeb.class)) {
+                DispatcherServlet dispatcherServlet = new DispatcherServlet();
+                applicationContext.getComponents().values().forEach(component -> {
+                    if (component.getClass().isAnnotationPresent(RestController.class))
+                        dispatcherServlet.getControllerRegistry().registerController(component.getClass().getAnnotation(RestController.class).value(), component);
+                });
+                new FrontController(dispatcherServlet);
+            }
 
             return primarySource.cast(app);
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException

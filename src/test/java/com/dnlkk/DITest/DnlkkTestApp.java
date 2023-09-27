@@ -12,6 +12,7 @@ import com.dnlkk.DITest.model.UserOperation;
 import com.dnlkk.DITest.repository.TestRepository;
 import com.dnlkk.DITest.service.MyService;
 import com.dnlkk.boot.annotations.ConfigValue;
+import com.dnlkk.boot.annotations.DnlkkApp;
 import com.dnlkk.dependency_injector.annotations.AutoInject;
 import com.dnlkk.dependency_injector.annotations.ConcreteInject;
 import com.dnlkk.dependency_injector.annotations.lifecycle.Prototype;
@@ -20,6 +21,7 @@ import com.dnlkk.dependency_injector.annotations.lifecycle.Singleton;
 import lombok.Data;
 
 @Data
+@DnlkkApp
 public class DnlkkTestApp {
     @AutoInject
     @Prototype
