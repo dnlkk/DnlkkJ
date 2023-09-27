@@ -1,6 +1,6 @@
 app:
-  version: 0.0.2
-  name: Turnip's Repo
+  version: 0.0.3
+  name: Controller's Control
   port: 5000
   datasource:
     driver: org.postgresql.Driver
