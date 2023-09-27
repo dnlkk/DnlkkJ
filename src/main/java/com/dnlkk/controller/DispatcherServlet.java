@@ -3,28 +3,25 @@ package com.dnlkk.controller;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.Enumeration;
+import java.lang.reflect.Parameter;
+import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import org.apache.catalina.connector.Response;
 
 import com.dnlkk.controller.annotations.Get;
+import com.dnlkk.controller.annotations.RequestParam;
 import com.dnlkk.controller.annotations.Post;
 import com.dnlkk.controller.annotations.RequestMapping;
 import com.dnlkk.controller.responses.ResponseEntity;
-import com.dnlkk.util.PathUtils;
-
+import com.dnlkk.util.ControllerUtils;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import lombok.Data;
+import lombok.Getter;
 
-@Data
-public class DispatcherServlet  extends HttpServlet {
+@Getter
+public class DispatcherServlet extends HttpServlet {
     private final ControllerRegistry controllerRegistry;
 
     public DispatcherServlet() {
@@ -40,10 +37,10 @@ public class DispatcherServlet  extends HttpServlet {
             String param = a.nextElement();
             System.out.println(String.format("%s = %s", param, request.getHeader(param)));
         }
-        Enumeration<String> b = request.getParameterNames();
-        while( b.hasMoreElements()) {
-            String param = b.nextElement();
-            System.out.println(String.format("%s = %s", param, request.getParameter(param)));
+        Map<String, String[]> parameterMap = request.getParameterMap();
+        System.out.println(parameterMap);
+        for( Map.Entry<String, String[]> parameter : parameterMap.entrySet() ) {
+            System.out.println(String.format("%s = %s", parameter.getKey(), Arrays.toString(parameter.getValue())));
         }
 
         String c = request.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
@@ -54,7 +51,9 @@ public class DispatcherServlet  extends HttpServlet {
 
         System.out.println(path);
 
-        if (path == null || !dispatch(response, path)) {
+        System.out.println(request.getMethod());
+
+        if (path == null || !dispatch(response, path, parameterMap, request.getMethod())) {
             // Если путь не соответствует ни одному из обработчиков, вы можете вернуть
             // код состояния 404 или выполнить другие действия по умолчанию.
             response.setStatus(404);
@@ -62,26 +61,64 @@ public class DispatcherServlet  extends HttpServlet {
         }
     }
 
-    public boolean dispatch(HttpServletResponse response, String path) {
-        
-        String[] methodPaths = PathUtils.regexPath("/[a-zA-z]*", path);
-        System.out.println(Arrays.toString(methodPaths));
-        String methodPath = PathUtils.removeFirstPath(methodPaths, path, 0);
-        System.out.println(methodPaths[0]);
-        System.out.println(methodPath);
+    public boolean dispatch(HttpServletResponse response, String path, Map<String, String[]> parametersMap, String requestType) {
 
-        Object controller = controllerRegistry.getControllerForPath(methodPaths[0]);
+        System.out.println( controllerRegistry.getControllers());
+
+        Optional<Map.Entry<String, Object>> optionalEntryMapController = controllerRegistry.getControllers().entrySet().stream()
+            .filter(entryMapController -> path.startsWith(entryMapController.getKey())).findFirst();
+
+        if (optionalEntryMapController.isEmpty())
+            return false;
+
+        Map.Entry<String, Object> entryMapController = optionalEntryMapController.get();
+
+        String methodPath = entryMapController.getKey().length() == path.length() 
+            ? 
+            "/" 
+            : 
+            path.substring(entryMapController.getKey().length(), path.length());
+
+        Object controller = entryMapController.getValue();
         
         if (controller != null){
-            return !Arrays.stream(controller.getClass().getMethods())
+            return !Arrays.stream(controller.getClass().getDeclaredMethods())
                 .filter(controllerEndpoint -> {
                     if (methodPath.equals(getRequestMapping(controllerEndpoint))) {
-                        try {
-                            Object controllerReturn = controllerEndpoint.invoke(controller);
-                            System.out.println(controllerEndpoint.invoke(controller).toString());
+                        if (ControllerUtils.methodEquals(controllerEndpoint, Get.class, requestType))
+                            return false;
+                        else if (ControllerUtils.methodEquals(controllerEndpoint, Post.class, requestType))
+                            return false;
+                        else try {
+                            List<Object> parameters = new ArrayList<>();
+                                System.out.println(parametersMap);
+                                for (Parameter parameter : controllerEndpoint.getParameters()) {
+                                    System.out.println(parameter.getName());
+                                    if (parameter.isAnnotationPresent(RequestParam.class) && parametersMap.containsKey(parameter.getAnnotation(RequestParam.class).value())) {
+                                        Object[] params = parametersMap.get(parameter.getAnnotation(RequestParam.class).value())[0].split(",");
+                                        if (!parameter.getType().isArray() && params.length == 1)
+                                            if (parameter.getType().equals(Integer.class))
+                                                parameters.add(Integer.parseInt((String) params[0]));
+                                            else
+                                                parameters.add(parameter.getType().cast(params[0]));
+                                        else {
+                                            Object[] returnObject = Arrays.copyOf(params, params.length);
+                                            if (parameter.getType().getComponentType().equals(Integer.class)) {
+                                                returnObject = new Integer[params.length];
+                                                for (int i = 0; i < returnObject.length; i++) {
+                                                    returnObject[i] = Integer.parseInt((String) params[i]);
+                                                } 
+                                            }
+                                            parameters.add(returnObject);
+                                        }
+
+                                    }
+                                }
+                            Object controllerReturn = controllerEndpoint.invoke(controller, parameters.toArray());
                             if (controllerReturn.getClass().equals(ResponseEntity.class)) {
                                 ResponseEntity responseEntity = (ResponseEntity) controllerReturn;
                                 response.setStatus(responseEntity.getStatus().code());
+
                                 response.getWriter().write(responseEntity.json());
                             } else if (controllerReturn.getClass().equals(String.class)) {
                                 response.getWriter().write(controllerReturn.toString());
