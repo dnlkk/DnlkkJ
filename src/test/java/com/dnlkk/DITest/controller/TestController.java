@@ -25,15 +25,15 @@ public class TestController {
         return "test testtt!!! ТЕСТОООО";
     }
 
-    @Get
-    @RequestMapping("/service")
-    public String getService() {
-        return myService.service();
-    }
-
-    @Get
-    @RequestMapping("/repo")
-    public ResponseEntity<UsersDTO> getRepo() {
-        return ResponseEntity.ok(myService.repo());
-    }
+//    @Get
+//    @RequestMapping("/service")
+//    public String getService() {
+//        return myService.service();
+//    }
+//
+//    @Get
+//    @RequestMapping("/repo")
+//    public ResponseEntity<UsersDTO> getRepo() {
+//        return ResponseEntity.ok(myService.repo());
+//    }
 }

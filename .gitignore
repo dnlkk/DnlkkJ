@@ -1,2 +1,4 @@
 /target/
 /db/data/
+pom.xml.asc
+release.properties
