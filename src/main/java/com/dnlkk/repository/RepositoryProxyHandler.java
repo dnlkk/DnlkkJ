@@ -163,8 +163,7 @@ public class RepositoryProxyHandler implements InvocationHandler {
                                         String relationKey = String.format("%s%s", relationFromId.toString(), field.getName());
 
                                         
-                                        if (field.isAnnotationPresent(OneToOne.class)) {
-                                            if (oneToMany.get(relationKey) == null)
+                                        if (field.isAnnotationPresent(OneToOne.class) && oneToMany.get(relationKey) == null) {
                                                 oneToMany.put(relationKey, relationEntity);
                                         }
                                         else {

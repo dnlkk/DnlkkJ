@@ -1,10 +1,11 @@
 package com.dnlkk.WebTest.controller;
 
+import com.dnlkk.WebTest.dtos.RequestParamTestDTO;
+import com.dnlkk.WebTest.dtos.UserDTO;
+import com.dnlkk.WebTest.dtos.UserResponseDTO;
 import com.dnlkk.WebTest.dtos.UsersDTO;
 import com.dnlkk.WebTest.service.MyService;
-import com.dnlkk.controller.annotations.Get;
-import com.dnlkk.controller.annotations.RequestParam;
-import com.dnlkk.controller.annotations.RequestMapping;
+import com.dnlkk.controller.annotations.*;
 import com.dnlkk.controller.responses.ResponseEntity;
 import com.dnlkk.dependency_injector.annotations.AutoInject;
 import com.dnlkk.dependency_injector.annotations.components.RestController;
@@ -28,10 +29,22 @@ public class TestController {
         return "test testtt!!! ТЕСТОООО";
     }
 
+    @Post
+    @RequestMapping("/test")
+    public ResponseEntity<UserResponseDTO> getTestUser(@RequestBody UserDTO userDto) {
+        return ResponseEntity.ok(new UserResponseDTO(userDto));
+    }
+
+    @Get
+    @RequestMapping("/test/:id")
+    public ResponseEntity<String> getTestUserPath(@PathVar("id") Integer id) {
+        return ResponseEntity.ok(String.format("Path var is %d", id));
+    }
+
     @Get
     @RequestMapping("/test2")
-    public String getTest2(@RequestParam("err") Integer[] err, @RequestParam("code") Integer code, @RequestParam("name") String name) {
-        return Arrays.toString(err) + " " + code + " " + name;
+    public ResponseEntity<RequestParamTestDTO> getTest2(@RequestParam("err") Integer[] err, @RequestParam("code") Integer code, @RequestParam("name") String name) {
+        return ResponseEntity.ok(new RequestParamTestDTO(err, code, name));
     }
 
     @Get
