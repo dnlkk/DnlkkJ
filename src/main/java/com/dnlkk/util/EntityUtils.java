@@ -13,8 +13,11 @@ import com.dnlkk.repository.annotations.entity.ManyToMany;
 import com.dnlkk.repository.annotations.entity.ManyToOne;
 import com.dnlkk.repository.annotations.entity.OneToMany;
 import com.dnlkk.repository.annotations.entity.OneToOne;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class EntityUtils {
+    public static final ObjectMapper objectMapper = new ObjectMapper();
+
     public static String getTableName(Class<?> clazz) {
         return clazz.getAnnotation(Table.class).value();
     }
