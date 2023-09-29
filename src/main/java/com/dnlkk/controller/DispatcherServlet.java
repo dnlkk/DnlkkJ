@@ -7,12 +7,11 @@ import java.lang.reflect.Parameter;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import com.dnlkk.controller.annotations.Get;
-import com.dnlkk.controller.annotations.RequestParam;
-import com.dnlkk.controller.annotations.Post;
-import com.dnlkk.controller.annotations.RequestMapping;
+import com.dnlkk.controller.annotations.*;
 import com.dnlkk.controller.responses.ResponseEntity;
 import com.dnlkk.util.ControllerUtils;
+import com.dnlkk.util.EntityUtils;
+import com.dnlkk.util.PathUtils;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,29 +30,14 @@ public class DispatcherServlet extends HttpServlet {
     @Override
     protected void service(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        String path = request.getPathInfo();
-        Enumeration<String> a = request.getHeaderNames();
-        while( a.hasMoreElements()) {
-            String param = a.nextElement();
-            System.out.println(String.format("%s = %s", param, request.getHeader(param)));
-        }
-        Map<String, String[]> parameterMap = request.getParameterMap();
-        System.out.println(parameterMap);
-        for( Map.Entry<String, String[]> parameter : parameterMap.entrySet() ) {
-            System.out.println(String.format("%s = %s", parameter.getKey(), Arrays.toString(parameter.getValue())));
-        }
 
-        String c = request.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
-        System.out.println(c);
-        
+        Map<String, String[]> parameterMap = request.getParameterMap();
+
         response.setCharacterEncoding("UTF-8");
         response.setContentType("application/json; charset=UTF-8");
 
-        System.out.println(path);
-
-        System.out.println(request.getMethod());
-
-        if (path == null || !dispatch(response, path, parameterMap, request.getMethod())) {
+        String path = request.getPathInfo();
+        if (path == null || !dispatch(response, request, parameterMap)) {
             // Если путь не соответствует ни одному из обработчиков, вы можете вернуть
             // код состояния 404 или выполнить другие действия по умолчанию.
             response.setStatus(404);
@@ -61,9 +45,8 @@ public class DispatcherServlet extends HttpServlet {
         }
     }
 
-    public boolean dispatch(HttpServletResponse response, String path, Map<String, String[]> parametersMap, String requestType) {
-
-        System.out.println( controllerRegistry.getControllers());
+    public boolean dispatch(HttpServletResponse response, HttpServletRequest request, Map<String, String[]> parametersMap) {
+        String path = request.getPathInfo();
 
         Optional<Map.Entry<String, Object>> optionalEntryMapController = controllerRegistry.getControllers().entrySet().stream()
             .filter(entryMapController -> path.startsWith(entryMapController.getKey())).findFirst();
@@ -84,17 +67,22 @@ public class DispatcherServlet extends HttpServlet {
         if (controller != null){
             return !Arrays.stream(controller.getClass().getDeclaredMethods())
                 .filter(controllerEndpoint -> {
-                    if (methodPath.equals(getRequestMapping(controllerEndpoint))) {
-                        if (ControllerUtils.methodEquals(controllerEndpoint, Get.class, requestType))
+                    String requestMapping = getRequestMapping(controllerEndpoint);
+                    if (requestMapping == null)
+                        return false;
+                    if (PathUtils.isRequestMapping(methodPath, requestMapping)) {
+                        if (ControllerUtils.methodEquals(controllerEndpoint, Get.class, request.getMethod()))
                             return false;
-                        else if (ControllerUtils.methodEquals(controllerEndpoint, Post.class, requestType))
+                        else if (ControllerUtils.methodEquals(controllerEndpoint, Post.class, request.getMethod()))
                             return false;
                         else try {
-                            List<Object> parameters = new ArrayList<>();
-                                System.out.println(parametersMap);
+                                List<Object> parameters = new ArrayList<>();
+                                List<String> requestPaths = Arrays.stream(PathUtils.splitPath("/", methodPath)).toList();
+                                List<String> requestMappingPaths = Arrays.stream(PathUtils.splitPath("/", requestMapping)).toList();
+
                                 for (Parameter parameter : controllerEndpoint.getParameters()) {
-                                    System.out.println(parameter.getName());
-                                    if (parameter.isAnnotationPresent(RequestParam.class) && parametersMap.containsKey(parameter.getAnnotation(RequestParam.class).value())) {
+                                    if (parameter.isAnnotationPresent(RequestParam.class)
+                                            && parametersMap.containsKey(parameter.getAnnotation(RequestParam.class).value())) {
                                         Object[] params = parametersMap.get(parameter.getAnnotation(RequestParam.class).value())[0].split(",");
                                         if (!parameter.getType().isArray() && params.length == 1)
                                             if (parameter.getType().equals(Integer.class))
@@ -112,6 +100,22 @@ public class DispatcherServlet extends HttpServlet {
                                             parameters.add(returnObject);
                                         }
 
+                                    }
+                                    else if (controllerEndpoint.isAnnotationPresent(Post.class)
+                                            && parameter.isAnnotationPresent(RequestBody.class)) {
+                                        parameters.add(EntityUtils.objectMapper.readValue(
+                                                request.getReader().lines().collect(Collectors.joining(System.lineSeparator())),
+                                                parameter.getType())
+                                        );
+                                    }
+                                    else if (parameter.isAnnotationPresent(PathVar.class)) {
+                                        int index = requestMappingPaths.indexOf(String.format(":%s", parameter.getAnnotation(PathVar.class).value()));
+                                        if (index == -1)
+                                            continue;
+                                        if (parameter.getType().equals(Integer.class))
+                                            parameters.add(Integer.parseInt(requestPaths.get(index)));
+                                        else
+                                            parameters.add(requestPaths.get(index));
                                     }
                                 }
                             Object controllerReturn = controllerEndpoint.invoke(controller, parameters.toArray());
