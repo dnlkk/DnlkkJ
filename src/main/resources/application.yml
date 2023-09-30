@@ -1,6 +1,7 @@
 app:
   version: 0.0.3
-  name: Controller's Control
+  version_name: Controller's Control
+  project_name: Ruslan Bank
   port: 4000
   datasource:
     driver: org.postgresql.Driver

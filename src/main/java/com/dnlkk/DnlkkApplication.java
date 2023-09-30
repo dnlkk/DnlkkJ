@@ -52,9 +52,13 @@ public class DnlkkApplication {
     }
 
     public DnlkkApplication(Class<?> clazz) {
-        isApplicationConfigLoaded = AppConfig.loadConfig();
+        isApplicationConfigLoaded = AppConfig.loadConfig(clazz);
         if (isApplicationConfigLoaded)
-            banner = Banner.init();
+            try {
+                banner = Banner.init(clazz);
+            } catch (Exception e) {
+                banner = Banner.init(null);
+            }
         if (banner != null)
             System.out.println(banner);
         this.primarySource = clazz;

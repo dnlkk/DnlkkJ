@@ -1,5 +1,6 @@
 package com.dnlkk.boot;
 
+import java.util.Objects;
 import java.util.Scanner;
 
 import org.slf4j.Logger;
@@ -9,8 +10,10 @@ public class Banner {
     private static String banner;
     private static final Logger logger = LoggerFactory.getLogger(Banner.class);
 
-    public static String init() {
-        try (Scanner scanner = new Scanner(Banner.class.getClassLoader().getResourceAsStream("banner.txt"))) {
+    public static String init(Class<?> clazz) {
+        try (Scanner scanner = new Scanner(Objects.requireNonNull((clazz == null ? Banner.class : clazz).getClassLoader().getResourceAsStream(
+                (AppConfig.configIsLoaded() ? "banner.txt" : "base_banner.txt")
+        )))) {
             StringBuilder stringBuilder = new StringBuilder();
             while (scanner.hasNextLine()) {
                 String line = scanner.nextLine();
@@ -26,7 +29,22 @@ public class Banner {
     }
 
     private static String inputArgs() {
-        String version = AppConfig.getProperty("app.version");
+        String version = "";
+        String verisonName = "";
+        String projectName = "";
+        if (AppConfig.configIsLoaded()) {
+            version = AppConfig.getProperty("app.version");
+            verisonName = AppConfig.getProperty("app.version_name");
+            if (verisonName == null)
+                verisonName = "";
+            projectName = AppConfig.getProperty("app.project_name");
+            if (projectName == null)
+                projectName = "";
+        } else {
+            version = AppConfig.getBaseProperty("app.version");
+            verisonName = AppConfig.getBaseProperty("app.version_name");
+        }
+
         if (version != null) {
             String[] versions = version.split("\\.");
             if (versions.length > 0)
@@ -38,9 +56,9 @@ public class Banner {
             if (versions.length > 3)
                 banner = banner.replace("%bn", versions[3]);
         }
-        String name = AppConfig.getProperty("app.name");
-        if (name != null) 
-            banner = banner.replace("%name", name);
+
+        banner = banner.replace("%vname", verisonName);
+        banner = banner.replace("%pname", projectName);
 
         return banner;
     }
@@ -49,5 +67,5 @@ public class Banner {
     public String toString() {
         return banner;
     }
-    
+
 }
