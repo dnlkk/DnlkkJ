@@ -5,7 +5,7 @@
 
     <groupId>ru.dnlkk</groupId>
     <artifactId>DnlkkJ</artifactId>
-    <version>0.1.12-SNAPSHOT</version>
+    <version>0.1.12</version>
 
     <name>DnlkkJ</name>
     <description>A revolution Java Framework that takes the worst of Spring and neutralizes the best of it.</description>
@@ -23,7 +23,7 @@
         <connection>scm:git:https://github.com/burunyuu23/DnlkkJ.git</connection>
         <url>https://github.com/burunyuu23/DnlkkJ</url>
         <developerConnection>scm:git:https://github.com/burunyuu23/DnlkkJ.git</developerConnection>
-        <tag>HEAD</tag>
+        <tag>DnlkkJ-0.1.12</tag>
   </scm>
 
     <distributionManagement>
