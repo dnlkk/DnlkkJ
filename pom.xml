@@ -6,7 +6,7 @@
 
     <groupId>ru.dnlkk</groupId>
     <artifactId>DnlkkJ</artifactId>
-    <version>0.1.23</version>
+    <version>0.1.24</version>
 
     <name>DnlkkJ</name>
     <description>A revolution Java Framework that takes the worst of Spring and neutralizes the best of it.
@@ -125,7 +125,7 @@
         <profile>
             <id>release</id>
             <properties>
-                <altDeploymentRepository>local::file:./target/staging-deploy</altDeploymentRepository>
+                <altDeploymentRepository>local::default::file:./target/staging-deploy</altDeploymentRepository>
             </properties>
             <build>
                 <plugins>
