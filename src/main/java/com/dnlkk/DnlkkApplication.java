@@ -43,7 +43,7 @@ public class DnlkkApplication {
 
             return primarySource.cast(app);
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
-                | NoSuchMethodException | SecurityException e) {
+                 | NoSuchMethodException | SecurityException e) {
             logger.error("Project initialize failed! Exit...");
             e.printStackTrace();
             System.exit(-1);
@@ -53,12 +53,12 @@ public class DnlkkApplication {
 
     public DnlkkApplication(Class<?> clazz) {
         isApplicationConfigLoaded = AppConfig.loadConfig(clazz);
-        if (isApplicationConfigLoaded)
-            try {
-                banner = Banner.init(clazz);
-            } catch (Exception e) {
-                banner = Banner.init(null);
-            }
+
+        try {
+            banner = Banner.init(clazz);
+        } catch (Exception e) {
+            banner = Banner.init(null);
+        }
         if (banner != null)
             System.out.println(banner);
         this.primarySource = clazz;
@@ -69,5 +69,5 @@ public class DnlkkApplication {
             this.applicationContextClass = AnnotationApplicationContext.class;
     }
 
-    
+
 }

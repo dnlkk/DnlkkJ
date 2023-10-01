@@ -48,11 +48,11 @@ public class AppConfig {
         Yaml yaml = new Yaml();
         if (baseConfig != null)
             return true;
-        try (InputStream inputStream = AppConfig.class.getClassLoader().getResourceAsStream("baseApplicationapplication.yml")) {
+        try (InputStream inputStream = AppConfig.class.getClassLoader().getResourceAsStream("base_application.yml")) {
             baseConfig = yaml.load(inputStream);
             return baseConfig != null;
         } catch (Exception e) {
-            logger.error("baseApplication.yml config in resources not found");
+            logger.error("base_application.yml config in resources not found");
         }
         return false;
     }

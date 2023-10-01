@@ -29,36 +29,31 @@ public class Banner {
     }
 
     private static String inputArgs() {
-        String version = "";
-        String verisonName = "";
-        String projectName = "";
+        String version = AppConfig.getBaseProperty("app.version");
+        String versionName = AppConfig.getBaseProperty("app.version_name");
+
+        banner = banner.replace("%ver", version);
+        banner = banner.replace("%vname", versionName);
+
         if (AppConfig.configIsLoaded()) {
-            version = AppConfig.getProperty("app.version");
-            verisonName = AppConfig.getProperty("app.version_name");
-            if (verisonName == null)
-                verisonName = "";
-            projectName = AppConfig.getProperty("app.project_name");
-            if (projectName == null)
-                projectName = "";
-        } else {
-            version = AppConfig.getBaseProperty("app.version");
-            verisonName = AppConfig.getBaseProperty("app.version_name");
-        }
+            String projectVersion = AppConfig.getProperty("app.version");
+            String projectName = AppConfig.getProperty("app.name");
 
-        if (version != null) {
-            String[] versions = version.split("\\.");
-            if (versions.length > 0)
-                banner = banner.replace("%mj", versions[0]);
-            if (versions.length > 1)
-                banner = banner.replace("%mi", versions[1]);
-            if (versions.length > 2)
-                banner = banner.replace("%fx", versions[2]);
-            if (versions.length > 3)
-                banner = banner.replace("%bn", versions[3]);
-        }
+            if (projectVersion == null && projectName == null) {
+                banner = banner.replace(":: %pname v%pver ::", "");
+            } else {
+                if (projectVersion != null)
+                    banner = banner.replace("%pver", projectVersion);
+                else
+                    banner = banner.replace("%pver", "\b");
 
-        banner = banner.replace("%vname", verisonName);
-        banner = banner.replace("%pname", projectName);
+                if (projectName != null)
+                    banner = banner.replace("%pname", projectName);
+                else
+                    banner = banner.replace("%pname", "\b");
+            }
+
+        }
 
         return banner;
     }
