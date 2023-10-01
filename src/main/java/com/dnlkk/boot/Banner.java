@@ -42,15 +42,9 @@ public class Banner {
             if (projectVersion == null && projectName == null) {
                 banner = banner.replace(":: %pname v%pver ::", "");
             } else {
-                if (projectVersion != null)
-                    banner = banner.replace("%pver", projectVersion);
-                else
-                    banner = banner.replace("%pver", "\b");
-
-                if (projectName != null)
-                    banner = banner.replace("%pname", projectName);
-                else
-                    banner = banner.replace("%pname", "\b");
+                if (projectVersion != null && projectName != null)
+                    banner = banner.replace("%pname v%pver", projectName + " " + projectVersion);
+                else banner = banner.replace("%pname v%pver", Objects.requireNonNullElse(projectVersion, projectName));
             }
 
         }
