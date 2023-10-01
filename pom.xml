@@ -28,13 +28,13 @@
 
     <distributionManagement>
         <snapshotRepository>
-            <id>ossrh</id>
-            <layout>plugins-snapshot</layout>
+            <id>snapshots</id>
+            <name>plugins-snapshot</name>
             <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
         </snapshotRepository>
         <repository>
-            <id>ossrh</id>
-            <layout>plugins-releases</layout>
+            <id>central</id>
+            <name>plugins-releases</name>
             <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2</url>
         </repository>
     </distributionManagement>
