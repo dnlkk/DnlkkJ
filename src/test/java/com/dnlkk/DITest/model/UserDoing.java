@@ -1,7 +1,5 @@
 package com.dnlkk.DITest.model;
 
-import org.checkerframework.checker.units.qual.C;
-
 import com.dnlkk.repository.annotations.entity.Column;
 import com.dnlkk.repository.annotations.entity.PK;
 import com.dnlkk.repository.annotations.entity.ManyToOne;
