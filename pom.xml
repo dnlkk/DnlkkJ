@@ -6,7 +6,7 @@
 
     <groupId>ru.dnlkk</groupId>
     <artifactId>DnlkkJ</artifactId>
-    <version>0.1.30</version>
+    <version>0.1.31</version>
 
     <name>DnlkkJ</name>
     <description>A revolution Java Framework that takes the worst of Spring and neutralizes the best of it.
@@ -64,7 +64,6 @@
             <groupId>org.apache.tomcat</groupId>
             <artifactId>tomcat-catalina</artifactId>
             <version>${org.apache.tomcat.version}</version>
-            <scope>provided</scope>
         </dependency>
 
 
@@ -73,7 +72,6 @@
             <groupId>jakarta.servlet</groupId>
             <artifactId>jakarta.servlet-api</artifactId>
             <version>${jakarta.servlet-api.version}</version>
-            <scope>provided</scope>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core -->
