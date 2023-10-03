@@ -32,7 +32,6 @@ public class DnlkkDataSourceFactory {
         } catch (SQLException e) {
             logger.error("DnlkkCP failed to connect with database");
             logger.error(e.getMessage());
-            e.printStackTrace();
             System.exit(-1);
         }
         

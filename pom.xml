@@ -6,7 +6,7 @@
 
     <groupId>ru.dnlkk</groupId>
     <artifactId>DnlkkJ</artifactId>
-    <version>0.1.31</version>
+    <version>0.1.32</version>
 
     <name>DnlkkJ</name>
     <description>A revolution Java Framework that takes the worst of Spring and neutralizes the best of it.
