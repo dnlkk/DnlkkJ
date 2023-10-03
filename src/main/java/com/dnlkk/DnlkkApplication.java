@@ -45,7 +45,6 @@ public class DnlkkApplication {
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
                  | NoSuchMethodException | SecurityException e) {
             logger.error("Project initialize failed! Exit...");
-            e.printStackTrace();
             System.exit(-1);
         }
         return null;

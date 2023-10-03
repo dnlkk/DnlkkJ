@@ -20,6 +20,7 @@ public class DnlkkDataSourceFactory {
             Class.forName(config.getDriverClass());
         } catch (ClassNotFoundException e) {
             logger.error("DnlkkCP failed to load database driver");
+            logger.error(e.getMessage());
             throw new RuntimeException("Failed to load database driver", e);
         }
         
@@ -29,7 +30,8 @@ public class DnlkkDataSourceFactory {
                 isFirstConnect = false;
             }
         } catch (SQLException e) {
-            logger.info("DnlkkCP failed to connect with database");
+            logger.error("DnlkkCP failed to connect with database");
+            logger.error(e.getMessage());
             e.printStackTrace();
             System.exit(-1);
         }

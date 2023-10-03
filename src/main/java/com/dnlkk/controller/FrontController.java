@@ -19,9 +19,6 @@ public class FrontController {
 
     public FrontController(DispatcherServlet dispatcherServlet) {
         this.dispatcherServlet = dispatcherServlet;
-        System.out.println("in front controller!");
-        System.out.println(this.dispatcherServlet.getControllerRegistry().getControllers());
-        System.out.println(dispatcherServlet.getControllerRegistry().getControllers());
         
         Tomcat tomcat = new Tomcat();
         String portProperty = AppConfig.getProperty("app.port");

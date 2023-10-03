@@ -14,7 +14,6 @@ public class ControllerRegistry {
             throw new RuntimeException("Controller with path " + path + " already exists!");
         else
             controllers.put(path, controller);
-        System.out.println(controllers);
     }
 
     public Object getControllerForPath(String path) {
