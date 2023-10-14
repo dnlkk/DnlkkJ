@@ -56,8 +56,8 @@ public class EntityUtils {
     }
 
     public static Stream<String> getColumnNameStream(Class<?> valueClass) {
-        return (Stream<String>) Arrays.stream(valueClass.getDeclaredFields())
-            .filter(field -> isNotPK(field) && isNotFK(field))
+        return Arrays.stream(valueClass.getDeclaredFields())
+            .filter(field -> isNotPK(field) && !field.isAnnotationPresent(OneToMany.class))
             .map(EntityUtils::getColumnName);
     }
 

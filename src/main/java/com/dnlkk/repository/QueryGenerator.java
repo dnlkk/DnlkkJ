@@ -28,35 +28,34 @@ public class QueryGenerator {
 
         if (methodParts.length > 0) {
             if (methodParts[0].equals(QueryOperation.FIND.getValue()))
-                query.append("SELECT * ");
+                query.append("SELECT " + tableName + ".*");
             else if (methodParts[0].equals(QueryOperation.COUNT.getValue()))
                 query.append("SELECT COUNT( DISTINCT " + EntityUtils.getRelationIdFieldName(valueClass) + " ) ");
             else if (methodParts[0].equals(QueryOperation.SUM.getValue()))
                 query.append("SELECT SUM( DISTINCT " + methodParts[1].toLowerCase() + ") ");
 
+            query.append(getReferencesAs(references));
+
             query.append("FROM " + tableName);
             boolean whereClauseAdded = false;
 
             query.append(getReferencesJoin(references, tableName));
-            
+
             Field[] fields = valueClass.getDeclaredFields();
-            
+
             for (int i = 0; i < methodParts.length; i++) {
                 String part = methodParts[i].toLowerCase();
-                
+
                 if (part.equals("all")) {
                     continue;
-                }
-                else if (part.equals("by")) {
+                } else if (part.equals("by")) {
                     if (!whereClauseAdded) {
                         query.append(" WHERE");
                         whereClauseAdded = true;
                     }
-                } 
-                else if (part.equals("or")) {
+                } else if (part.equals("or")) {
                     query.append(" OR");
-                } 
-                else if (part.equals("and")) {
+                } else if (part.equals("and")) {
                     query.append(" AND");
                 }
                 if (whereClauseAdded) {
@@ -64,7 +63,7 @@ public class QueryGenerator {
                     if (!list.isEmpty()) {
                         int methodParameterIndex = Arrays.stream(fields).toList().indexOf(list.get(0));
                         String paramName = valueClass.getDeclaredFields()[methodParameterIndex].getName();
-                        query.append(" " + tableName + "." + paramName + " = ? ");
+                        query.append(" ").append(tableName).append(".").append(paramName).append(" = ? ");
                     }
                 }
             }
@@ -76,7 +75,7 @@ public class QueryGenerator {
         return null;
     }
 
-    public static String getReferencesJoin(List<Field> references, String tableName) {
+    public static String getReferencesAs(List<Field> references) {
         StringBuilder builder = new StringBuilder(" ");
         List<String> includedTableNames = new ArrayList<>();
         if (!references.isEmpty()) {
@@ -84,27 +83,69 @@ public class QueryGenerator {
 
             for (Field field : references) {
                 Class<?> targetClass = null;
-                
+
                 if (field.getType() == List.class)
                     targetClass = (Class) ((ParameterizedType) field.getGenericType()).getActualTypeArguments()[0];
                 else
                     targetClass = (Class<?>) field.getGenericType();
 
                 String targetTableName = targetClass.getAnnotation(Table.class).value();
-                
-                if (includedTableNames.contains(targetTableName))
-                 continue;
 
-                 String targetKey = null;
-                 for (Field targetField : targetClass.getDeclaredFields()) {
-                    if ((targetField.isAnnotationPresent(OneToOne.class) && targetField.getAnnotation(OneToOne.class).value().equals(field.getName())) || (targetField.isAnnotationPresent(ManyToOne.class) && targetField.getAnnotation(ManyToOne.class).value().equals(field.getName())))
+                String targetKey = null;
+                for (Field targetField : targetClass.getDeclaredFields()) {
+                    if (EntityUtils.isNotFK(targetField) || (targetField.isAnnotationPresent(OneToOne.class) && targetField.getAnnotation(OneToOne.class).value().equals(field.getName()))
+                            || (targetField.isAnnotationPresent(ManyToOne.class) && targetField.getAnnotation(ManyToOne.class).value().equals(field.getName()))) {
                         targetKey = EntityUtils.getColumnName(targetField);
-                 }
+                        if (targetKey == null)
+                            continue;
+
+                        builder.append(",").append(targetTableName).append(".").append(targetKey).append(" AS ").append(targetTableName).append(targetKey).append(" ");
+                    }
+                }
+
+            }
+        }
+        return builder.toString();
+    }
+
+    public static String getReferencesJoin(List<Field> references, String tableName) {
+        StringBuilder builder = new StringBuilder(" ");
+        List<String> includedTableNames = new ArrayList<>();
+        if (!references.isEmpty()) {
+            for (Field field : references) {
+                String sourceKey = EntityUtils.getColumnName(EntityUtils.getIdField(references.get(0).getDeclaringClass()));
+                Class<?> targetClass;
+
+                if (field.getType() == List.class)
+                    targetClass = (Class) ((ParameterizedType) field.getGenericType()).getActualTypeArguments()[0];
+                else
+                    targetClass = (Class<?>) field.getGenericType();
+
+                String targetTableName = targetClass.getAnnotation(Table.class).value();
+
+                if (includedTableNames.contains(targetTableName))
+                    continue;
+
+                String targetKey = null;
+                if ((field.isAnnotationPresent(OneToOne.class))
+                        || (field.isAnnotationPresent(ManyToOne.class))) {
+                    targetKey = EntityUtils.getColumnName(EntityUtils.getIdField(targetClass));
+                    sourceKey = EntityUtils.getColumnName(field);
+                }
+                else {
+                    for (Field targetField : targetClass.getDeclaredFields()) {
+                        if ((targetField.isAnnotationPresent(OneToOne.class) && targetField.getAnnotation(OneToOne.class).value().equals(field.getName()))
+                                || (targetField.isAnnotationPresent(ManyToOne.class) && targetField.getAnnotation(ManyToOne.class).value().equals(field.getName()))) {
+                            targetKey = EntityUtils.getColumnName(targetField);
+                        }
+                    }
+
+                }
 
                 if (targetKey == null)
                     continue;
 
-                builder.append("LEFT JOIN " + targetTableName + " ON " + tableName + "."  + sourceKey + " = " + targetTableName + "." + targetKey + " ");
+                builder.append("LEFT JOIN ").append(targetTableName).append(" ON ").append(tableName).append(".").append(sourceKey).append(" = ").append(targetTableName).append(".").append(targetKey).append(" ");
                 includedTableNames.add(targetTableName);
             }
         }
