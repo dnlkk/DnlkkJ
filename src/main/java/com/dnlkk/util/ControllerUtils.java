@@ -27,22 +27,23 @@ public class ControllerUtils {
         List<String> requestMappingPaths = Arrays.stream(PathUtils.splitPath("/", requestMapping)).toList();
 
         for (Parameter parameter : controllerEndpoint.getParameters()) {
-            if (parameter.isAnnotationPresent(RequestParam.class)
-                    && parametersMap.containsKey(parameter.getAnnotation(RequestParam.class).value())) {
-                Object[] params = parametersMap.get(parameter.getAnnotation(RequestParam.class).value())[0].split(",");
-                if (!parameter.getType().isArray() && params.length == 1)
-                    parameters.add(parameterCast(parameter, params[0]));
-                else {
-                    Object[] returnObject = Arrays.copyOf(params, params.length);
-                    if (parameter.getType().getComponentType().equals(Integer.class)) {
-                        returnObject = new Integer[params.length];
-                        for (int i = 0; i < returnObject.length; i++) {
-                            returnObject[i] = Integer.parseInt((String) params[i]);
+            if (parameter.isAnnotationPresent(RequestParam.class)) {
+                if (parametersMap.containsKey(parameter.getAnnotation(RequestParam.class).value())) {
+                    Object[] params = parametersMap.get(parameter.getAnnotation(RequestParam.class).value())[0].split(",");
+                    if (!parameter.getType().isArray() && params.length == 1)
+                        parameters.add(parameterCast(parameter, params[0]));
+                    else {
+                        Object[] returnObject = Arrays.copyOf(params, params.length);
+                        if (parameter.getType().getComponentType().equals(Integer.class)) {
+                            returnObject = new Integer[params.length];
+                            for (int i = 0; i < returnObject.length; i++) {
+                                returnObject[i] = Integer.parseInt((String) params[i]);
+                            }
                         }
+                        parameters.add(returnObject);
                     }
-                    parameters.add(returnObject);
-                }
-
+                } else
+                    parameters.add(null);
             } else if (controllerEndpoint.isAnnotationPresent(Post.class)
                     && parameter.isAnnotationPresent(RequestBody.class)) {
                 parameters.add(EntityUtils.objectMapper.readValue(

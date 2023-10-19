@@ -4,3 +4,8 @@ pom.xml.asc
 release.properties
 *.pgp
 src/main/resources/application.yml
+
+src/test
+.idea
+out
+tomcat**

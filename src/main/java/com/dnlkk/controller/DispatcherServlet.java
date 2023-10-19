@@ -1,6 +1,7 @@
 package com.dnlkk.controller;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
@@ -8,9 +9,13 @@ import java.util.stream.Collectors;
 
 import com.dnlkk.controller.annotations.*;
 import com.dnlkk.controller.responses.ResponseEntity;
+import com.dnlkk.doc.DnlkkDoc;
 import com.dnlkk.util.ControllerUtils;
 import com.dnlkk.util.PathUtils;
+import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -24,21 +29,43 @@ public class DispatcherServlet extends HttpServlet {
     private final ControllerRegistry controllerRegistry;
     private static final Logger logger = LoggerFactory.getLogger(DispatcherServlet.class);
 
-    public DispatcherServlet() {
-        controllerRegistry = new ControllerRegistry();
+    public DispatcherServlet(ControllerRegistry controllerRegistry) {
+        this.controllerRegistry = controllerRegistry;
     }
 
     @Override
     protected void service(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
+        if (request.getRequestURI().contains(".html"))
+            return;
         Map<String, String[]> parameterMap = request.getParameterMap();
+
 
         response.setCharacterEncoding("UTF-8");
         response.setContentType("application/json; charset=UTF-8");
 
         String path = request.getPathInfo();
-        if (path == null || !dispatch(response, request, parameterMap)) {
+        System.out.println(path);
+        if (path.equals("/doc.html")) {
+            String jspPath = "/doc.jsp";
+            request.setAttribute("message", "hi!");
+            RequestDispatcher dispatcher = request.getRequestDispatcher(jspPath);
+
+            response.setContentType("text/html");
+            PrintWriter out = response.getWriter();
+
+            try {
+                // Включение содержимого JSP файла в ответ
+                dispatcher.include(request, response);
+            } catch (Exception e) {
+                e.printStackTrace();
+                out.println("Ошибка при включении JSP файла: " + e.getMessage());
+            }
+
+            out.close();
+        }
+        else if (!dispatch(response, request, parameterMap)) {
             response.setStatus(404);
             response.getWriter().write("{\"error\": \"Ресурс не найден!\"}");
         }
@@ -98,6 +125,7 @@ public class DispatcherServlet extends HttpServlet {
                                     return true;
                                 } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException |
                                          IOException e) {
+                                    e.printStackTrace();
                                     logger.error(e.getMessage());
                                 }
                         }
