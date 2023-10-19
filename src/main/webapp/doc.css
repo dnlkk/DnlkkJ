@@ -1,0 +1,133 @@
+:root {
+    --background-color: #ebeceb;
+    --navbar-background-color: #333A56;
+    --logo-color:  #00A878;
+    --get-color: #00cccc;
+    --get-backcolor: #DFF9F9;
+    --post-color: #ffbb58;
+    --post-backcolor: #FFF7EA;
+}
+
+body {
+    margin: 0;
+}
+
+.nav-bar {
+    height: 100px;
+    box-shadow: 0 2px 2px #00000077;
+    position: relative;
+    z-index: 1;
+}
+.nav-bar-panel {
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    column-gap: 10px;
+    align-items: flex-start;
+}
+
+.main-padding {
+    padding: 0 10%;
+}
+
+.dnlkkdoc {
+    background: var(--navbar-background-color);
+    color: white;
+    height: 72px;
+
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    font-size: 32px;
+    font-family: Arial, serif;
+    font-weight: bolder;
+
+    text-shadow: 0 1px 0 var(--logo-color),
+                 1px 0 0 var(--logo-color),
+                 0 0 0 var(--logo-color),
+                 1px 1px 0 var(--logo-color),
+                 0 -1px 0 var(--logo-color),
+                 -1px 0 0 var(--logo-color),
+                 -1px -1px 0 var(--logo-color),
+                 1px -1px 0 var(--logo-color),
+                 -1px 1px 0 var(--logo-color);
+}
+
+main {
+    background: var(--background-color);
+}
+
+.requests {
+    display: grid;
+    row-gap: 20px;
+}
+.request {
+    border-width: 2px;
+    border-style: solid;
+    border-radius: 10px;
+    padding: 8px;
+}
+.gapped-panel {
+    display: flex;
+    justify-content: flex-start;
+    column-gap: 10px;
+    align-items: center;
+}
+.request-mapping {
+    font-family: Consolas, cursive;
+}
+.request-button {
+    width: 100px;
+    height: 36px;
+
+    border: 0;
+    border-radius: 10px;
+
+    font-weight: 900;
+    font-size: 16px;
+    color: var(--background-color);
+
+    cursor: pointer;
+}
+
+.GET {
+    background: var(--get-backcolor);
+    border-color: var(--get-color);
+}
+.GET-button {
+    background: var(--get-color);
+}
+
+.POST {
+    background: var(--post-backcolor);
+    border-color: var(--post-color);
+}
+.POST-button {
+    background: var(--post-color);
+}
+
+.center {
+    display: flex;
+    justify-content: center;
+}
+
+.accordion__header::after {
+    flex-shrink: 0;
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-left: auto;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000000'%3e%3cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-size: 1.25rem;
+    content: "";
+    cursor: pointer;
+    transition: transform 0.2s ease-out;
+}
+.accordion__item_show .accordion__header::after {
+    transform: rotate(-180deg);
+}
+
+.collapse {
+    max-height: 0;
+    overflow: hidden;
+}
