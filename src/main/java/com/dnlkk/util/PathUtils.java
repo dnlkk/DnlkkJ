@@ -1,8 +1,5 @@
 package com.dnlkk.util;
 
-import com.dnlkk.controller.annotations.PathVar;
-
-import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -16,16 +13,20 @@ public class PathUtils {
     }
 
     public static boolean isRequestMapping(String requestPath, String methodPath) {
+        return getRequestMapping(requestPath, methodPath) != null;
+    }
+
+    public static String getRequestMapping(String requestPath, String methodPath) {
         String[] methodPaths = splitPath("/", methodPath);
         String[] requestPaths = splitPath("/", requestPath);
 
         if (methodPaths.length != requestPaths.length)
-            return false;
+            return null;
         for (int i = 0; i < methodPaths.length; i++) {
             if (!methodPaths[i].equals(requestPaths[i]) && !methodPaths[i].startsWith(":"))
-                return false;
+                return null;
         }
-        return true;
+        return methodPath;
     }
 
     public static String removeFirstPath(String splitter, String[] keys) {        
