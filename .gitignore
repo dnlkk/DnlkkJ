@@ -1,6 +1,6 @@
 /target/
 /db/data/
-pom.xml.asc
+pom.xml.*
 release.properties
 *.pgp
 src/main/resources/application.yml

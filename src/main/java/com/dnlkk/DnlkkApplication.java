@@ -5,13 +5,13 @@ import java.lang.reflect.InvocationTargetException;
 import com.dnlkk.boot.Banner;
 import com.dnlkk.controller.ControllerRegistry;
 import com.dnlkk.controller.JspDispatcherServlet;
+import com.dnlkk.dependency_injector.annotations.components.Controller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.dnlkk.boot.AppConfig;
-import com.dnlkk.boot.annotations.DnlkkApp;
 import com.dnlkk.boot.annotations.DnlkkWeb;
-import com.dnlkk.controller.DispatcherServlet;
+import com.dnlkk.controller.ApiDispatcherServlet;
 import com.dnlkk.controller.FrontController;
 import com.dnlkk.dependency_injector.annotation_context.AnnotationApplicationContext;
 import com.dnlkk.dependency_injector.annotations.components.RestController;
@@ -36,13 +36,15 @@ public class DnlkkApplication {
 
             if (this.primarySource.isAnnotationPresent(DnlkkWeb.class)) {
                 ControllerRegistry controllerRegistry = new ControllerRegistry();
-                DispatcherServlet dispatcherServlet = new DispatcherServlet(controllerRegistry);
+                ApiDispatcherServlet apiDispatcherServlet = new ApiDispatcherServlet(controllerRegistry);
                 JspDispatcherServlet jspDispatcherServlet = new JspDispatcherServlet(controllerRegistry);
                 applicationContext.getComponents().values().forEach(component -> {
                     if (component.getClass().isAnnotationPresent(RestController.class))
                         controllerRegistry.registerController(component.getClass().getAnnotation(RestController.class).value(), component);
+                    if (component.getClass().isAnnotationPresent(Controller.class))
+                        controllerRegistry.registerController(component.getClass().getAnnotation(Controller.class).value(), component);
                 });
-                new FrontController(dispatcherServlet, jspDispatcherServlet);
+                new FrontController(apiDispatcherServlet, jspDispatcherServlet);
             }
 
             return primarySource.cast(app);

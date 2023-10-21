@@ -15,8 +15,4 @@ public class ControllerRegistry {
         else
             controllers.put(path, controller);
     }
-
-    public Object getControllerForPath(String path) {
-        return controllers.get(path);
-    }
 }
