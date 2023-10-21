@@ -6,10 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.dnlkk.dependency_injector.DependencyInjector;
-import com.dnlkk.dependency_injector.annotations.components.Component;
-import com.dnlkk.dependency_injector.annotations.components.Repository;
-import com.dnlkk.dependency_injector.annotations.components.RestController;
-import com.dnlkk.dependency_injector.annotations.components.Service;
+import com.dnlkk.dependency_injector.annotations.components.*;
 import com.dnlkk.dependency_injector.application_context.ComponentFactory;
 import com.dnlkk.repository.DnlkkRepositoryFactory;
 import com.dnlkk.util.ScannerUtils;
@@ -30,7 +27,7 @@ public class AnnotationComponentFactory implements ComponentFactory {
 
                     if (!clazz.isAnnotationPresent(Repository.class))
                         componentInstance = createComponentInstance(clazz);
-                    else 
+                    else
                         componentInstance = DnlkkRepositoryFactory.createRepositoryInstance(clazz);
 
                     components.put(clazz.getSimpleName(), componentInstance);
@@ -43,16 +40,17 @@ public class AnnotationComponentFactory implements ComponentFactory {
 
     private boolean isComponentClass(Class<?> clazz) {
         return clazz.isAnnotationPresent(Component.class)
-            || clazz.isAnnotationPresent(RestController.class)
-            || clazz.isAnnotationPresent(Service.class)
-            || clazz.isAnnotationPresent(Repository.class);
+                || clazz.isAnnotationPresent(RestController.class)
+                || clazz.isAnnotationPresent(Controller.class)
+                || clazz.isAnnotationPresent(Service.class)
+                || clazz.isAnnotationPresent(Repository.class);
     }
 
     private Object createComponentInstance(Class<?> clazz) {
         try {
             return clazz.getDeclaredConstructor().newInstance();
         } catch (InstantiationException | IllegalAccessException
-                | NoSuchMethodException | InvocationTargetException e) {
+                 | NoSuchMethodException | InvocationTargetException e) {
             e.printStackTrace();
             throw new RuntimeException("Failed to create an instance of " + clazz);
         }

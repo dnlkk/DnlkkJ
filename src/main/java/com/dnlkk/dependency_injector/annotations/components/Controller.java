@@ -1,12 +1,12 @@
-package com.dnlkk.controller.annotations;
+package com.dnlkk.dependency_injector.annotations.components;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+@Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
-public @interface RequestMapping {
-    String value() default "/";
+public @interface Controller {
+    String value() default "/error.html";
 }
