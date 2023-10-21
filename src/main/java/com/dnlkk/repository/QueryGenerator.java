@@ -18,7 +18,7 @@ public class QueryGenerator {
     public static String generateQuery(Method method, String tableName, Class<?> valueClass, List<Field> references, Object[] args) {
         String methodName = method.getName();
         String[] methodParts = methodName.split("(?=[A-Z])"); // Разбиваем имя метода по заглавным буквам
-        StringBuilder query = new StringBuilder("");
+        StringBuilder query = new StringBuilder();
 
         Pageable pageable = Arrays.stream(args)
                 .filter(arg -> arg.getClass().equals(Pageable.class))
@@ -30,11 +30,11 @@ public class QueryGenerator {
 
         if (methodParts.length > 0) {
             if (methodParts[0].equals(QueryOperation.FIND.getValue()))
-                query.append("SELECT " + tableName + ".*");
+                query.append("SELECT ").append(tableName).append(".*");
             else if (methodParts[0].equals(QueryOperation.COUNT.getValue()))
-                query.append("SELECT COUNT( DISTINCT " + EntityUtils.getRelationIdFieldName(valueClass) + " ) ");
+                query.append("SELECT COUNT( DISTINCT ").append(EntityUtils.getRelationIdFieldName(valueClass)).append(" ) ");
             else if (methodParts[0].equals(QueryOperation.SUM.getValue()))
-                query.append("SELECT SUM( DISTINCT " + methodParts[1].toLowerCase() + ") ");
+                query.append("SELECT SUM( DISTINCT ").append(methodParts[1].toLowerCase()).append(") ");
 
             query.append(getReferencesAs(references));
 
@@ -48,20 +48,21 @@ public class QueryGenerator {
 
             Field[] fields = valueClass.getDeclaredFields();
 
-            for (int i = 0; i < methodParts.length; i++) {
-                String part = methodParts[i].toLowerCase();
+            for (String methodPart : methodParts) {
+                String part = methodPart.toLowerCase();
 
-                if (part.equals("all")) {
-                    continue;
-                } else if (part.equals("by")) {
-                    if (!whereClauseAdded) {
-                        query.append(" WHERE");
-                        whereClauseAdded = true;
+                switch (part) {
+                    case "all" -> {
+                        continue;
                     }
-                } else if (part.equals("or")) {
-                    query.append(" OR");
-                } else if (part.equals("and")) {
-                    query.append(" AND");
+                    case "by" -> {
+                        if (!whereClauseAdded) {
+                            query.append(" WHERE");
+                            whereClauseAdded = true;
+                        }
+                    }
+                    case "or" -> query.append(" OR");
+                    case "and" -> query.append(" AND");
                 }
                 if (whereClauseAdded) {
                     List<Field> list = Arrays.stream(fields).filter(field -> field.getName().toLowerCase().equals(part)).toList();
@@ -132,7 +133,6 @@ public class QueryGenerator {
     }
 
     public static String getReferencesJoin(List<Field> references, String tableName) {
-        System.out.println(references);
         StringBuilder builder = new StringBuilder(" ");
         Set<String> includedTableNames = new HashSet<>();
         if (!references.isEmpty()) {
