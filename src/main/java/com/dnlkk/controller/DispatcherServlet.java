@@ -1,97 +1,51 @@
 package com.dnlkk.controller;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import com.dnlkk.controller.annotations.*;
-import com.dnlkk.controller.responses.ResponseEntity;
-import com.dnlkk.doc.DnlkkDoc;
+import com.dnlkk.boot.AppConfig;
+import com.dnlkk.controller.annotations.Get;
+import com.dnlkk.controller.annotations.Post;
+import com.dnlkk.controller.annotations.RequestMapping;
 import com.dnlkk.util.ControllerUtils;
 import com.dnlkk.util.PathUtils;
-import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
-import lombok.Getter;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Getter
-public class DispatcherServlet extends HttpServlet {
-    private final ControllerRegistry controllerRegistry;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+@EqualsAndHashCode(callSuper = true)
+@Data
+@AllArgsConstructor
+public abstract class DispatcherServlet extends HttpServlet {
+    protected final ControllerRegistry controllerRegistry;
+    protected final String contextPath = AppConfig.getProperty("app.context-path");
     private static final Logger logger = LoggerFactory.getLogger(DispatcherServlet.class);
 
-    public DispatcherServlet(ControllerRegistry controllerRegistry) {
-        this.controllerRegistry = controllerRegistry;
-    }
+    public boolean dispatch(HttpServletResponse response, HttpServletRequest request) {
+        Map<String, String[]> parametersMap = request.getParameterMap();
 
-    @Override
-    protected void service(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+        Map.Entry<String, Object> entryMapController = getEntryMapControllerFromRequest(request);
 
-        if (request.getRequestURI().contains(".html"))
-            return;
-        Map<String, String[]> parameterMap = request.getParameterMap();
-
-
-        response.setCharacterEncoding("UTF-8");
-        response.setContentType("application/json; charset=UTF-8");
-
-        String path = request.getPathInfo();
-        System.out.println(path);
-        if (path.equals("/doc.html")) {
-            String jspPath = "/doc.jsp";
-            request.setAttribute("message", "hi!");
-            RequestDispatcher dispatcher = request.getRequestDispatcher(jspPath);
-
-            response.setContentType("text/html");
-            PrintWriter out = response.getWriter();
-
-            try {
-                // Включение содержимого JSP файла в ответ
-                dispatcher.include(request, response);
-            } catch (Exception e) {
-                e.printStackTrace();
-                out.println("Ошибка при включении JSP файла: " + e.getMessage());
-            }
-
-            out.close();
-        }
-        else if (!dispatch(response, request, parameterMap)) {
-            response.setStatus(404);
-            response.getWriter().write("{\"error\": \"Ресурс не найден!\"}");
-        }
-    }
-
-    public boolean dispatch(HttpServletResponse response, HttpServletRequest request, Map<String, String[]> parametersMap) {
-        String path = request.getPathInfo();
-
-        Optional<Map.Entry<String, Object>> optionalEntryMapController = controllerRegistry.getControllers().entrySet().stream()
-                .filter(entryMapController -> path.startsWith(entryMapController.getKey())).findFirst();
-
-        if (optionalEntryMapController.isEmpty())
-            return false;
-
-        Map.Entry<String, Object> entryMapController = optionalEntryMapController.get();
-
-        String methodPath = entryMapController.getKey().length() == path.length()
-                ?
-                "/"
-                :
-                path.substring(entryMapController.getKey().length());
+        if (entryMapController == null)
+            throw new RuntimeException("Controller doesn't exists!");
 
         Object controller = entryMapController.getValue();
 
+        String methodPath = getMethodPath(entryMapController.getKey(), request);
+
         if (controller != null) {
-            return !Arrays.stream(controller.getClass().getDeclaredMethods())
+            return Arrays.stream(controller.getClass().getDeclaredMethods())
                     .filter(controllerEndpoint -> {
                         String requestMapping = getRequestMapping(controllerEndpoint);
                         if (requestMapping == null)
@@ -110,34 +64,59 @@ public class DispatcherServlet extends HttpServlet {
                                             parametersMap,
                                             body
                                     );
-
                                     Object controllerReturn = controllerEndpoint.invoke(controller, parameters.toArray());
-                                    if (controllerReturn.getClass().equals(ResponseEntity.class)) {
-                                        ResponseEntity<?> responseEntity = (ResponseEntity<?>) controllerReturn;
-                                        response.setStatus(responseEntity.getStatus().code());
-
-                                        response.getWriter().write(responseEntity.json());
-                                    } else if (controllerReturn.getClass().equals(String.class)) {
-                                        response.getWriter().write(controllerReturn.toString());
-                                    } else {
-                                        return false;
-                                    }
-                                    return true;
+                                    return controllerDispatch(controllerEndpoint, controllerReturn, request, response);
                                 } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException |
                                          IOException e) {
-                                    e.printStackTrace();
                                     logger.error(e.getMessage());
                                 }
                         }
                         return false;
                     }).toList().isEmpty();
         }
-        return false;
+        return true;
     }
 
-    private String getRequestMapping(Method controllerEndpoint) {
+    protected abstract boolean controllerDispatch(Method controllerEndpoint, Object controllerReturn, HttpServletRequest request, HttpServletResponse response) throws IOException;
+
+    protected String getRequestMapping(Method controllerEndpoint) {
         if (controllerEndpoint.isAnnotationPresent(RequestMapping.class))
             return controllerEndpoint.getAnnotation(RequestMapping.class).value();
         return null;
+    }
+
+    protected String getMethodPath(String controllerPath, HttpServletRequest request) {
+        String path = request.getRequestURI();
+        if (path.startsWith(contextPath + "/api"))
+            path = path.substring(contextPath.length()+4);
+        String substring = controllerPath.endsWith(".html") ?
+                path.substring(0, path.length()-controllerPath.length())
+                :
+                path.substring(controllerPath.length());
+
+        return controllerPath.length() == path.length() ?
+                "/"
+                :
+                substring;
+    }
+
+    protected Map.Entry<String, Object> getEntryMapControllerFromRequest(HttpServletRequest request) {
+        String path = request.getRequestURI();
+
+        if (path.startsWith(contextPath + "/api"))
+            path = path.substring(contextPath.length() + 4);
+
+        String finalPath = path;
+        Optional<Map.Entry<String, Object>> optionalEntryMapController = controllerRegistry.getControllers().entrySet().stream()
+                .filter(entryMapController -> {
+                    if (finalPath.endsWith(".html")) // TODO: Don't name your files identically, but in different directories or i'll slap your ass
+                        return finalPath.endsWith(entryMapController.getKey());
+                    return finalPath.startsWith(entryMapController.getKey());
+                }).findFirst();
+
+        if (optionalEntryMapController.isEmpty())
+            return null;
+
+        return optionalEntryMapController.get();
     }
 }
