@@ -30,7 +30,10 @@ public class AppConfig {
         if (config == null) {
             loadConfig(AppConfig.class);
         }
-        return findProperty(config, key);
+        String property = findProperty(config, key);
+        if (property == null)
+            property = getBaseProperty(key);
+        return property;
     }
 
     private static String findProperty(Map<String, Object> config, String key) {
