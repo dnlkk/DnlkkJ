@@ -1,8 +1,6 @@
 package com.dnlkk.controller;
 
 import jakarta.servlet.ServletException;
-import jakarta.servlet.descriptor.JspConfigDescriptor;
-import org.apache.catalina.Context;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.WebResourceRoot;
 import org.apache.catalina.core.StandardContext;
@@ -11,7 +9,6 @@ import org.apache.catalina.startup.Tomcat;
 import org.apache.catalina.webresources.DirResourceSet;
 import org.apache.catalina.webresources.StandardRoot;
 import org.apache.jasper.servlet.JasperInitializer;
-import org.apache.tomcat.util.descriptor.web.JspPropertyGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,40 +17,46 @@ import com.dnlkk.boot.AppConfig;
 import lombok.Data;
 
 import java.io.File;
+import java.util.Set;
 
 @Data
 public class FrontController {
     private final Logger logger = LoggerFactory.getLogger(FrontController.class);
-    private final DispatcherServlet dispatcherServlet;
+    private final ApiDispatcherServlet apiDispatcherServlet;
     private final JspDispatcherServlet jspDispatcherServlet;
     private Tomcat tomcat;
 
-    public FrontController(DispatcherServlet dispatcherServlet, JspDispatcherServlet jspDispatcherServlet) {
-        this.dispatcherServlet = dispatcherServlet;
+    public FrontController(ApiDispatcherServlet apiDispatcherServlet, JspDispatcherServlet jspDispatcherServlet) {
+        this.apiDispatcherServlet = apiDispatcherServlet;
         this.jspDispatcherServlet = jspDispatcherServlet;
 
-        String webappDirLocation = "src/main/webapp/";
         Tomcat tomcat = new Tomcat();
 
         String portProperty = AppConfig.getProperty("app.port");
-        Integer port = portProperty == null ? 8080 : Integer.parseInt(portProperty);
+        int port = portProperty == null ? 8080 : Integer.parseInt(portProperty);
 
         String hostname = AppConfig.getProperty("app.hostname");
         tomcat.setPort(port);
         tomcat.setHostname(hostname != null ? hostname : "localhost");
 
-        // Создайте сервлет и добавьте его в контекст
-        StandardContext ctx = (StandardContext) tomcat.addWebapp("/", new File(webappDirLocation).getAbsolutePath());
+        File webapp;
+        try {
+            webapp = new File("src/main/webapp");
+        } catch (NullPointerException e) {
+            webapp = new File("src/main");
+        }
+
+        StandardContext ctx = (StandardContext) tomcat.addWebapp("", webapp.getAbsolutePath());
         File additionWebInfClasses = new File("target/classes");
         WebResourceRoot resources = new StandardRoot(ctx);
-        resources.addPreResources(new DirResourceSet(resources, "/WEB-INF/classes",
+        resources.addPreResources(new DirResourceSet(resources, "/META-INF/resources",
                 additionWebInfClasses.getAbsolutePath(), "/"));
         ctx.setResources(resources);
 
         String contextPath = AppConfig.getProperty("app.context-path");
         if (contextPath == null)
             contextPath = "";
-        Tomcat.addServlet(ctx, "DispatcherServlet", this.dispatcherServlet);
+        Tomcat.addServlet(ctx, "DispatcherServlet", this.apiDispatcherServlet);
         ctx.addServletMappingDecoded(contextPath+"/api/*", "DispatcherServlet");
         Tomcat.addServlet(ctx, "JspDispatcherServlet", this.jspDispatcherServlet);
         ctx.addServletMappingDecoded("*.html", "JspDispatcherServlet");
