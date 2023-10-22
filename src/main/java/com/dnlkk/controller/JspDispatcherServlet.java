@@ -34,9 +34,13 @@ public class JspDispatcherServlet extends DispatcherServlet {
 
             request.getRequestDispatcher(replaceHtmlWithJsp(request)).forward(request, response);
         }
-        else if (request.getRequestURI().endsWith(".html") && dispatch(response, request)) {
-            request.setAttribute("model", "Error");
-            request.getRequestDispatcher("error.jsp").forward(request, response);
+        else if (request.getRequestURI().endsWith(".html")) {
+            try {
+                dispatch(response, request);
+            } catch (Exception e) {
+                request.setAttribute("model", e.getLocalizedMessage());
+                request.getRequestDispatcher("error.jsp").forward(request, response);
+            }
         }
     }
     public String replaceHtmlWithJsp(HttpServletRequest request) {

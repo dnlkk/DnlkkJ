@@ -1,0 +1,22 @@
+body {
+    padding: 20px;
+
+    display: grid;
+}
+
+main {
+
+    display: grid;
+    justify-content: center;
+    align-items: center;
+}
+
+header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+
+    font-family: Arial, serif;
+    font-weight: bold;
+    font-size: 32px;
+}

@@ -97,7 +97,7 @@ public class DocModelDnlkk {
             StringBuilder stringBuilder = new StringBuilder();
 
             if (clazz.equals(ResponseEntity.class)) {
-                return "Got ResponseEntity<?>, please mark method with @ApiOperation(name, response)";
+                return "Got " + clazz.getSimpleName() +"<?>, please mark method with @ApiOperation(name, response)";
             }
 
             stringBuilder.append(String.format("%s: {\n", clazz.getSimpleName()));
