@@ -1,3 +1,4 @@
 app:
-  version: 0.1.32
-  version_name: "DnlkkJ: Start Prodinum"
+  version: 0.2.0
+  version_name: "One Frame, Two Work"
+  context-path: ""

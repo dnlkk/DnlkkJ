@@ -6,10 +6,11 @@
 
     <groupId>ru.dnlkk</groupId>
     <artifactId>DnlkkJ</artifactId>
-    <version>0.1.32</version>
+    <version>0.2.0</version>
 
     <name>DnlkkJ</name>
-    <description>A revolution Java Framework that takes the worst of Spring and neutralizes the best of it.
+    <description>
+        A revolution Java Framework that takes the worst of Spring and neutralizes the best of it.
     </description>
     <url>https://github.com/burunyuu23/DnlkkJ</url>
     <inceptionYear>2023</inceptionYear>
@@ -209,5 +210,17 @@
             </build>
         </profile>
     </profiles>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/webapp</directory>
+                <targetPath>META-INF/resources</targetPath>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+        </resources>
+    </build>
 
 </project>
