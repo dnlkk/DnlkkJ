@@ -1,4 +1,4 @@
-package com.dnlkk.repository.annotations;
+package com.dnlkk.controller.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
