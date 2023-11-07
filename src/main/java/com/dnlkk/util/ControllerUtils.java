@@ -6,7 +6,7 @@ import com.dnlkk.controller.annotations.RequestBody;
 import com.dnlkk.controller.annotations.RequestParam;
 import com.dnlkk.repository.Pageable;
 import com.dnlkk.repository.Sort;
-import com.dnlkk.repository.annotations.PageableParam;
+import com.dnlkk.controller.annotations.PageableParam;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import java.lang.annotation.Annotation;
