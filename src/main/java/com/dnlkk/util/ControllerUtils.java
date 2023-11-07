@@ -4,6 +4,9 @@ import com.dnlkk.controller.annotations.PathVar;
 import com.dnlkk.controller.annotations.Post;
 import com.dnlkk.controller.annotations.RequestBody;
 import com.dnlkk.controller.annotations.RequestParam;
+import com.dnlkk.repository.Pageable;
+import com.dnlkk.repository.Sort;
+import com.dnlkk.repository.annotations.PageableParam;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import java.lang.annotation.Annotation;
@@ -27,7 +30,34 @@ public class ControllerUtils {
         List<String> requestMappingPaths = Arrays.stream(PathUtils.splitPath("/", requestMapping)).toList();
 
         for (Parameter parameter : controllerEndpoint.getParameters()) {
-            if (parameter.isAnnotationPresent(RequestParam.class)) {
+            if (parameter.isAnnotationPresent(PageableParam.class)) {
+                Integer limit = null;
+                if (parametersMap.containsKey("limit"))
+                    limit = Integer.parseInt(parametersMap.get("limit")[0]);
+                Integer page = null;
+                if (parametersMap.containsKey("page"))
+                    page = Integer.parseInt(parametersMap.get("page")[0]);
+                Integer offset = null;
+                if (parametersMap.containsKey("offset"))
+                    offset = Integer.parseInt(parametersMap.get("offset")[0]);
+                String sortBy = null;
+                if (parametersMap.containsKey("sortBy"))
+                    sortBy = parametersMap.get("sortBy")[0];
+                String sortHow = null;
+                if (parametersMap.containsKey("sortHow"))
+                    sortHow = parametersMap.get("sortHow")[0];
+
+                Pageable.PageableBuilder pageableBuilder = Pageable.builder()
+                        .limit(limit != null ? limit : 10)
+                        .page(page != null ? page : 0)
+                        .offset(offset != null ? offset : 0);
+
+                if (sortBy != null)
+                    if (sortHow != null) pageableBuilder.sort(new Sort(sortBy, sortHow));
+                    else pageableBuilder.sort(new Sort(sortBy));
+
+                parameters.add(pageableBuilder.build());
+            } else if (parameter.isAnnotationPresent(RequestParam.class)) {
                 if (parametersMap.containsKey(parameter.getAnnotation(RequestParam.class).value())) {
                     Object[] params = parametersMap.get(parameter.getAnnotation(RequestParam.class).value())[0].split(",");
                     if (!parameter.getType().isArray() && params.length == 1)
