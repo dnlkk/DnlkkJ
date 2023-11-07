@@ -34,8 +34,7 @@ public class QueryGenerator {
             if (methodParts[0].equals(QueryOperation.FIND.getValue())) {
                 query.append("SELECT ").append(tableName).append(".*");
                 query.append(getReferencesAs(references));
-            }
-            else if (methodParts[0].equals(QueryOperation.COUNT.getValue()))
+            } else if (methodParts[0].equals(QueryOperation.COUNT.getValue()))
                 query.append("SELECT COUNT( DISTINCT ").append(tableName).append(".").append(EntityUtils.getRelationIdFieldName(valueClass)).append(" ) ");
             else if (methodParts[0].equals(QueryOperation.SUM.getValue()))
                 query.append("SELECT SUM( DISTINCT ").append(tableName).append(".").append(methodParts[1].toLowerCase()).append(") ");
@@ -80,7 +79,14 @@ public class QueryGenerator {
             String resultQuery = query.toString();
 
             if (pageable != null)
-                resultQuery = String.format("WITH RankedMessages AS (%s)" +
+                resultQuery = String.format("WITH RankedMessages AS (%s " +
+                                (pageable.getSort() != null ?
+                                        String.format(
+                                                "ORDER BY %s %s",
+                                                pageable.getSort().getBy(),
+                                                pageable.getSort().getHow()
+                                        ) : "")
+                                + ")" +
                                 ", UniqueRankedMessages AS (" +
                                 "    SELECT * " +
                                 "    FROM RankedMessages" +
@@ -90,14 +96,8 @@ public class QueryGenerator {
                                 ") " +
                                 "SELECT * " +
                                 "FROM RankedMessages " +
-                                "WHERE %4$s IN (SELECT %4$s FROM UniqueRankedMessages) " +
-                                (pageable.getSort() != null ?
-                                        String.format(
-                                                "ORDER BY RankedMessages.%s %s",
-                                                pageable.getSort().getBy(),
-                                                pageable.getSort().getHow()
-                                        ) : ""
-                                ),
+                                "WHERE %4$s IN (SELECT %4$s FROM UniqueRankedMessages) "
+                        ,
                         resultQuery,
                         pageable.getLimit(),
                         pageable.getLimit() * pageable.getPage() + pageable.getOffset(),
