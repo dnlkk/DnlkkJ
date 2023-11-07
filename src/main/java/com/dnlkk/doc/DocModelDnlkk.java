@@ -1,6 +1,8 @@
 package com.dnlkk.doc;
 
 import com.dnlkk.controller.annotations.*;
+import com.dnlkk.controller.annotations.request_method.Get;
+import com.dnlkk.controller.annotations.request_method.Post;
 import com.dnlkk.controller.responses.ResponseEntity;
 import com.dnlkk.doc.annotation.ApiOperation;
 import com.dnlkk.doc.annotation.Tag;

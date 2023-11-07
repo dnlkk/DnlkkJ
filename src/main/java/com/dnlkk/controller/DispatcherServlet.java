@@ -1,8 +1,7 @@
 package com.dnlkk.controller;
 
 import com.dnlkk.boot.AppConfig;
-import com.dnlkk.controller.annotations.Get;
-import com.dnlkk.controller.annotations.Post;
+import com.dnlkk.controller.annotations.request_method.*;
 import com.dnlkk.controller.annotations.RequestMapping;
 import com.dnlkk.util.ControllerUtils;
 import com.dnlkk.util.PathUtils;
@@ -54,6 +53,12 @@ public abstract class DispatcherServlet extends HttpServlet {
                             if (ControllerUtils.methodEquals(controllerEndpoint, Get.class, request.getMethod()))
                                 return false;
                             else if (ControllerUtils.methodEquals(controllerEndpoint, Post.class, request.getMethod()))
+                                return false;
+                            else if (ControllerUtils.methodEquals(controllerEndpoint, Delete.class, request.getMethod()))
+                                return false;
+                            else if (ControllerUtils.methodEquals(controllerEndpoint, Patch.class, request.getMethod()))
+                                return false;
+                            else if (ControllerUtils.methodEquals(controllerEndpoint, Put.class, request.getMethod()))
                                 return false;
                             else try {
                                     String body = request.getReader().lines().collect(Collectors.joining(System.lineSeparator()));

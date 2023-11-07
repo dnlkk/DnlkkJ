@@ -1,7 +1,7 @@
 package com.dnlkk.controller;
 
-import com.dnlkk.controller.annotations.Get;
-import com.dnlkk.controller.annotations.Post;
+import com.dnlkk.controller.annotations.request_method.Get;
+import com.dnlkk.controller.annotations.request_method.Post;
 import com.dnlkk.controller.responses.ResponseEntity;
 import com.dnlkk.doc.DocModelDnlkk;
 import com.dnlkk.util.ControllerUtils;

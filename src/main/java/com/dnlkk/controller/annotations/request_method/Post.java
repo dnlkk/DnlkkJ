@@ -1,4 +1,4 @@
-package com.dnlkk.controller.annotations;
+package com.dnlkk.controller.annotations.request_method;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -7,5 +7,5 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface Get {
+public @interface Post {
 }
