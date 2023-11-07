@@ -1,9 +1,11 @@
 package com.dnlkk.util;
 
 import com.dnlkk.controller.annotations.PathVar;
-import com.dnlkk.controller.annotations.Post;
+import com.dnlkk.controller.annotations.request_method.Patch;
+import com.dnlkk.controller.annotations.request_method.Post;
 import com.dnlkk.controller.annotations.RequestBody;
 import com.dnlkk.controller.annotations.RequestParam;
+import com.dnlkk.controller.annotations.request_method.Put;
 import com.dnlkk.repository.Pageable;
 import com.dnlkk.repository.Sort;
 import com.dnlkk.controller.annotations.PageableParam;
@@ -75,8 +77,13 @@ public class ControllerUtils {
                     }
                 } else
                     parameters.add(null);
-            } else if (controllerEndpoint.isAnnotationPresent(Post.class)
-                    && parameter.isAnnotationPresent(RequestBody.class)) {
+            } else if (
+                    (
+                            controllerEndpoint.isAnnotationPresent(Post.class)
+                                    || controllerEndpoint.isAnnotationPresent(Patch.class)
+                                    || controllerEndpoint.isAnnotationPresent(Put.class)
+                    )
+                            && parameter.isAnnotationPresent(RequestBody.class)) {
                 parameters.add(EntityUtils.objectMapper.readValue(
                         body,
                         parameter.getType())
