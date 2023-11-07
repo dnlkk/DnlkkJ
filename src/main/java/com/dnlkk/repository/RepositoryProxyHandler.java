@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 import javax.sql.DataSource;
 
 import com.dnlkk.repository.annotations.entity.*;
+import com.dnlkk.util.EntityIgnoreUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,15 +44,21 @@ public class RepositoryProxyHandler implements InvocationHandler {
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) {
+        String[] ignoredFields = EntityIgnoreUtils.getIgnoredFieldFromMethod(method, valueClass);
+
+        List<Object> arguments = new ArrayList<>(Arrays.stream(args).toList());
+        arguments.add(ignoredFields);
+        Object[] args2 = arguments.toArray(new Object[0]);
+
         Object result = null;
         if (method.isAnnotationPresent(Query.class)) {
-            result = executeCustomQuery(method.getAnnotation(Query.class).value(), args, method.getParameters());
+            result = executeCustomQuery(method.getAnnotation(Query.class).value(), args2, method.getParameters());
         } else if (method.getName().startsWith(QueryOperation.FIND.getValue())) {
-            result = executeFindQuery(method, args);
+            result = executeFindQuery(method, args2);
         } else if (method.getName().startsWith(QueryOperation.COUNT.getValue()) || method.getName().startsWith(QueryOperation.SUM.getValue())) {
-            result = executeCountQuery(method, args);
+            result = executeCountQuery(method, args2);
         } else if (method.getName().equals(QueryOperation.SAVE.getValue())) {
-            result = saveEntity(args[0]);
+            result = saveEntity(arguments.get(0));
         }
 
         if (result != null && !List.class.isAssignableFrom(method.getReturnType()) && (List.class.isAssignableFrom(result.getClass()))) {
@@ -65,7 +72,7 @@ public class RepositoryProxyHandler implements InvocationHandler {
 
     // TODO: split method
     // voice:.idea/1695822289179.wav
-    public List<Object> statementListExecutor(PreparedStatement statement) throws SQLException {
+    public List<Object> statementListExecutor(PreparedStatement statement, List<String> ignoredFields) throws SQLException {
         List<Object> resultFunction = new ArrayList<>();
         Object id = null; // TODO: id check
         boolean idChange = false;
@@ -87,6 +94,8 @@ public class RepositoryProxyHandler implements InvocationHandler {
             while (resultSet.next()) {
                 try {
                     for (Field field : fields) {
+                        if (ignoredFields.contains(field.getName()))
+                            continue;
                         if (!EntityUtils.isNotPK(field)) {
                             Object newId = resultSet.getObject(EntityUtils.getColumnName(field));
                             if (id == null || !id.equals(newId)) {
@@ -216,9 +225,10 @@ public class RepositoryProxyHandler implements InvocationHandler {
         List<Object> result = new ArrayList<>();
 
         String[] queryParameters = SQLQueryUtil.getParamsFromQuery(sqlWithParams);
+        List<String> ignoredFields = new ArrayList<>(Arrays.stream((String[]) args[args.length - 1]).toList());
 
         String sql = SQLQueryUtil.removeParamsFromQuery(sqlWithParams, queryParameters);
-        sql = sql.replace("WHERE", QueryGenerator.getReferencesJoin(references, tableName) + " WHERE");
+        sql = sql.replace("WHERE", QueryGenerator.getReferencesJoin(references, tableName, ignoredFields) + " WHERE");
 
         logger.debug(Arrays.toString(queryParameters));
         logger.debug(sql);
@@ -242,7 +252,7 @@ public class RepositoryProxyHandler implements InvocationHandler {
                 }
             }
 
-            result = statementListExecutor(statement);
+            result = statementListExecutor(statement, ignoredFields);
 
         } catch (SQLException e) {
             e.printStackTrace();
@@ -254,19 +264,18 @@ public class RepositoryProxyHandler implements InvocationHandler {
     private List<Object> executeFindQuery(Method method, Object[] args) {
         String sql = QueryGenerator.generateQuery(method, tableName, valueClass, references, args);
         List<Object> result = new ArrayList<>();
+        List<String> ignoredFields = new ArrayList<>(Arrays.stream((String[]) args[args.length - 1]).toList());
 
         Pageable pageable = (Pageable) Arrays.stream(args).filter(arg -> arg.getClass().isAssignableFrom(Pageable.class)).findFirst().orElse(null);
 
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            if (args != null) {
-                for (int i = 0; i < args.length; i++) {
-                    if (!args[i].getClass().equals(Pageable.class))
-                        statement.setObject(i + 1, args[i]);
-                }
+            for (int i = 0; i < args.length - 1; i++) {
+                if (!args[i].getClass().equals(Pageable.class) && !ignoredFields.contains(args[i]))
+                    statement.setObject(i + 1, args[i]);
             }
-            result = statementListExecutor(statement);
+            result = statementListExecutor(statement, ignoredFields);
         } catch (SQLException e) {
             e.printStackTrace();
         }

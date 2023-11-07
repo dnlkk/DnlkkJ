@@ -19,6 +19,7 @@ public class QueryGenerator {
         String methodName = method.getName();
         String[] methodParts = methodName.split("(?=[A-Z])"); // Разбиваем имя метода по заглавным буквам
         StringBuilder query = new StringBuilder();
+        List<String> ignoredFields = new ArrayList<>(Arrays.stream((String[]) args[args.length - 1]).toList());
 
         Pageable pageable = null;
         if (args != null)
@@ -33,7 +34,7 @@ public class QueryGenerator {
         if (methodParts.length > 0) {
             if (methodParts[0].equals(QueryOperation.FIND.getValue())) {
                 query.append("SELECT ").append(tableName).append(".*");
-                query.append(getReferencesAs(references));
+                query.append(getReferencesAs(references, ignoredFields));
             } else if (methodParts[0].equals(QueryOperation.COUNT.getValue()))
                 query.append("SELECT COUNT( DISTINCT ").append(tableName).append(".").append(EntityUtils.getRelationIdFieldName(valueClass)).append(" ) ");
             else if (methodParts[0].equals(QueryOperation.SUM.getValue()))
@@ -46,12 +47,15 @@ public class QueryGenerator {
             query.append("FROM ").append(tableName);
             boolean whereClauseAdded = false;
 
-            query.append(getReferencesJoin(references, tableName));
+            query.append(getReferencesJoin(references, tableName, ignoredFields));
 
             Field[] fields = valueClass.getDeclaredFields();
 
             for (String methodPart : methodParts) {
                 String part = methodPart.toLowerCase();
+
+                if (part.equals("ignored"))
+                    break;
 
                 switch (part) {
                     case "all" -> {
@@ -109,12 +113,14 @@ public class QueryGenerator {
         return null;
     }
 
-    public static String getReferencesAs(List<Field> references) {
+    public static String getReferencesAs(List<Field> references, List<String> ignoredFields) {
         StringBuilder builder = new StringBuilder(" ");
         List<String> includedTableNames = new ArrayList<>();
         if (!references.isEmpty()) {
 
             for (Field field : references) {
+                if (ignoredFields.contains(field.getName()))
+                    continue;
                 Class<?> targetClass;
 
                 if (field.getType() == List.class)
@@ -142,11 +148,13 @@ public class QueryGenerator {
         return builder.toString();
     }
 
-    public static String getReferencesJoin(List<Field> references, String tableName) {
+    public static String getReferencesJoin(List<Field> references, String tableName, List<String> ignoredFields) {
         StringBuilder builder = new StringBuilder(" ");
         Set<String> includedTableNames = new HashSet<>();
         if (!references.isEmpty()) {
             for (Field field : references) {
+                if (ignoredFields.contains(field.getName()))
+                    continue;
                 String sourceKey = EntityUtils.getColumnName(EntityUtils.getIdField(references.get(0).getDeclaringClass()));
                 Class<?> targetClass;
 
