@@ -9,4 +9,6 @@ public class Pageable {
     private int limit;
     private int offset;
     private int page;
+    private Long totalPages;
+    private Sort sort;
 }

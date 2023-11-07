@@ -7,4 +7,5 @@ public interface DnlkkRepository<K, V> {
     List<V> findAll();
     V save(V entity);
     V deleteById(K id);
+    Long countAll();
 }

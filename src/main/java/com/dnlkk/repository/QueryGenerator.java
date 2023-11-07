@@ -20,23 +20,26 @@ public class QueryGenerator {
         String[] methodParts = methodName.split("(?=[A-Z])"); // Разбиваем имя метода по заглавным буквам
         StringBuilder query = new StringBuilder();
 
-        Pageable pageable = Arrays.stream(args)
-                .filter(arg -> arg.getClass().equals(Pageable.class))
-                .findFirst()
-                .map(Pageable.class::cast)
-                .orElse(null);
+        Pageable pageable = null;
+        if (args != null)
+            pageable = Arrays.stream(args)
+                    .filter(arg -> arg.getClass().equals(Pageable.class))
+                    .findFirst()
+                    .map(Pageable.class::cast)
+                    .orElse(null);
 
         logger.debug(Arrays.toString(methodParts));
 
         if (methodParts.length > 0) {
-            if (methodParts[0].equals(QueryOperation.FIND.getValue()))
+            if (methodParts[0].equals(QueryOperation.FIND.getValue())) {
                 query.append("SELECT ").append(tableName).append(".*");
+                query.append(getReferencesAs(references));
+            }
             else if (methodParts[0].equals(QueryOperation.COUNT.getValue()))
-                query.append("SELECT COUNT( DISTINCT ").append(EntityUtils.getRelationIdFieldName(valueClass)).append(" ) ");
+                query.append("SELECT COUNT( DISTINCT ").append(tableName).append(".").append(EntityUtils.getRelationIdFieldName(valueClass)).append(" ) ");
             else if (methodParts[0].equals(QueryOperation.SUM.getValue()))
-                query.append("SELECT SUM( DISTINCT ").append(methodParts[1].toLowerCase()).append(") ");
+                query.append("SELECT SUM( DISTINCT ").append(tableName).append(".").append(methodParts[1].toLowerCase()).append(") ");
 
-            query.append(getReferencesAs(references));
 
             if (pageable != null)
                 query.append(String.format(",ROW_NUMBER() OVER (PARTITION BY %1$s.%2$s ORDER BY %1$s.%2$s) AS rn ", tableName, EntityUtils.getRelationIdFieldName(valueClass)));
@@ -78,19 +81,26 @@ public class QueryGenerator {
 
             if (pageable != null)
                 resultQuery = String.format("WITH RankedMessages AS (%s)" +
-                        ", UniqueRankedMessages AS (" +
-                        "    SELECT * " +
-                        "    FROM RankedMessages" +
-                        "    WHERE rn = 1 " +
-                        "    LIMIT %d " +
-                        "    OFFSET %d " +
-                        ") " +
-                        "SELECT * " +
-                        "FROM RankedMessages " +
-                        "WHERE %4$s IN (SELECT %4$s FROM UniqueRankedMessages) ",
+                                ", UniqueRankedMessages AS (" +
+                                "    SELECT * " +
+                                "    FROM RankedMessages" +
+                                "    WHERE rn = 1 " +
+                                "    LIMIT %d " +
+                                "    OFFSET %d " +
+                                ") " +
+                                "SELECT * " +
+                                "FROM RankedMessages " +
+                                "WHERE %4$s IN (SELECT %4$s FROM UniqueRankedMessages) " +
+                                (pageable.getSort() != null ?
+                                        String.format(
+                                                "ORDER BY RankedMessages.%s %s",
+                                                pageable.getSort().getBy(),
+                                                pageable.getSort().getHow()
+                                        ) : ""
+                                ),
                         resultQuery,
                         pageable.getLimit(),
-                        pageable.getLimit()*pageable.getPage() + pageable.getOffset(),
+                        pageable.getLimit() * pageable.getPage() + pageable.getOffset(),
                         EntityUtils.getRelationIdFieldName(valueClass));
 
             logger.debug(resultQuery);
@@ -153,8 +163,7 @@ public class QueryGenerator {
                         || (field.isAnnotationPresent(ManyToOne.class))) {
                     targetKey = EntityUtils.getColumnName(EntityUtils.getIdField(targetClass));
                     sourceKey = EntityUtils.getColumnName(field);
-                }
-                else {
+                } else {
                     for (Field targetField : targetClass.getDeclaredFields()) {
                         if ((targetField.isAnnotationPresent(OneToOne.class) && targetField.getAnnotation(OneToOne.class).value().equals(field.getName()))
                                 || (targetField.isAnnotationPresent(ManyToOne.class) && targetField.getAnnotation(ManyToOne.class).value().equals(field.getName()))) {

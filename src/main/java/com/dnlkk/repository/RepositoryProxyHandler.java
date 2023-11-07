@@ -141,7 +141,7 @@ public class RepositoryProxyHandler implements InvocationHandler {
                                             relationEntityManyToOne = entityToIdMap.get(relationFromId);
                                         } else {
                                             relationEntityManyToOne = valueClass.getConstructor().newInstance();
-                                            for (Field relationEntityField: relationEntityManyToOne.getClass().getDeclaredFields()) {
+                                            for (Field relationEntityField : relationEntityManyToOne.getClass().getDeclaredFields()) {
                                                 if (relationEntityField.isAnnotationPresent(PK.class)) {
                                                     relationEntityField.setAccessible(true);
                                                     relationEntityField.set(relationEntityManyToOne, relationFromId);
@@ -159,7 +159,7 @@ public class RepositoryProxyHandler implements InvocationHandler {
                                         } else {
                                             if (relationObjects.get(relationKey) == null)
                                                 relationObjects.computeIfAbsent(relationKey, k -> new ArrayList<>());
-                                            if (((field.isAnnotationPresent(OneToMany.class) && relationField.isAnnotationPresent(ManyToOne.class) && relationField.getAnnotation(ManyToOne.class).value().equals(field.getName()) ) ||
+                                            if (((field.isAnnotationPresent(OneToMany.class) && relationField.isAnnotationPresent(ManyToOne.class) && relationField.getAnnotation(ManyToOne.class).value().equals(field.getName())) ||
                                                     (field.isAnnotationPresent(ManyToMany.class)))
                                                     && !((List<Object>) relationObjects.get(relationKey)).contains(relationEntity))
                                                 ((List<Object>) relationObjects.get(relationKey)).add(relationEntity);
@@ -255,6 +255,8 @@ public class RepositoryProxyHandler implements InvocationHandler {
         String sql = QueryGenerator.generateQuery(method, tableName, valueClass, references, args);
         List<Object> result = new ArrayList<>();
 
+        Pageable pageable = (Pageable) Arrays.stream(args).filter(arg -> arg.getClass().isAssignableFrom(Pageable.class)).findFirst().orElse(null);
+
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
@@ -265,9 +267,17 @@ public class RepositoryProxyHandler implements InvocationHandler {
                 }
             }
             result = statementListExecutor(statement);
-
         } catch (SQLException e) {
             e.printStackTrace();
+        }
+        if (pageable != null) {
+            try {
+                pageable.setTotalPages(
+                        ((Long) executeCountQuery(repositoryInterface.getMethod("countAll"), null) - pageable.getOffset() - 1) / pageable.getLimit()
+                );
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         return result;
