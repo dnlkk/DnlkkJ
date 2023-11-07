@@ -59,6 +59,8 @@ public class RepositoryProxyHandler implements InvocationHandler {
             result = executeCountQuery(method, args2);
         } else if (method.getName().equals(QueryOperation.SAVE.getValue())) {
             result = saveEntity(arguments.get(0));
+        } else if (method.getName().startsWith(QueryOperation.DELETE.getValue())) {
+            deleteEntity(arguments.get(0));
         }
 
         if (result != null && !List.class.isAssignableFrom(method.getReturnType()) && (List.class.isAssignableFrom(result.getClass()))) {
@@ -373,5 +375,22 @@ public class RepositoryProxyHandler implements InvocationHandler {
             e.printStackTrace();
         }
         return entity;
+    }
+
+    private void deleteEntity(Object id) {
+        String sql = String.format(
+                "DELETE FROM %s WHERE %s = ?",
+                tableName,
+                EntityUtils.getRelationIdFieldName(valueClass)
+        );
+
+        System.out.println(sql);
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setObject(1, id);
+            statement.execute();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 }

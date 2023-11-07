@@ -55,8 +55,8 @@ public class ResponseEntity<T> {
     public static <T> ResponseEntity<T> ok(T body) {
         return new ResponseEntity<>(body, HttpStatus.OK);
     }
-    public static <T> ResponseEntity<T> noContent(T body) {
-        return new ResponseEntity<>(body, HttpStatus.NO_CONTENT);
+    public static <T> ResponseEntity<T> noContent() {
+        return new ResponseEntity<>(null, HttpStatus.NO_CONTENT);
     }
     public static <T> ResponseEntity<T> bad(T body) {
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
