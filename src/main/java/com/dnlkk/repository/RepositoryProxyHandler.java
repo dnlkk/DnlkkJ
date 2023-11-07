@@ -204,10 +204,8 @@ public class RepositoryProxyHandler implements InvocationHandler {
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            if (args != null) {
-                for (int i = 0; i < args.length; i++) {
-                    statement.setObject(i + 1, args[i]);
-                }
+            for (int i = 0; i < args.length; i++) {
+                statement.setObject(i + 1, args[i]);
             }
 
             try (ResultSet resultSet = statement.executeQuery()) {
@@ -227,7 +225,9 @@ public class RepositoryProxyHandler implements InvocationHandler {
         List<Object> result = new ArrayList<>();
 
         String[] queryParameters = SQLQueryUtil.getParamsFromQuery(sqlWithParams);
-        List<String> ignoredFields = new ArrayList<>(Arrays.stream((String[]) args[args.length - 1]).toList());
+        List<String> ignoredFields = null;
+        if (args.length > 1)
+            ignoredFields = new ArrayList<>(Arrays.stream((String[]) args[args.length - 1]).toList());
 
         String sql = SQLQueryUtil.removeParamsFromQuery(sqlWithParams, queryParameters);
         sql = sql.replace("WHERE", QueryGenerator.getReferencesJoin(references, tableName, ignoredFields) + " WHERE");
@@ -266,7 +266,9 @@ public class RepositoryProxyHandler implements InvocationHandler {
     private List<Object> executeFindQuery(Method method, Object[] args) {
         String sql = QueryGenerator.generateQuery(method, tableName, valueClass, references, args);
         List<Object> result = new ArrayList<>();
-        List<String> ignoredFields = new ArrayList<>(Arrays.stream((String[]) args[args.length - 1]).toList());
+        List<String> ignoredFields = null;
+        if (args.length > 1)
+            ignoredFields = new ArrayList<>(Arrays.stream((String[]) args[args.length - 1]).toList());
 
         Pageable pageable = (Pageable) Arrays.stream(args).filter(arg -> arg.getClass().isAssignableFrom(Pageable.class)).findFirst().orElse(null);
 
@@ -274,7 +276,7 @@ public class RepositoryProxyHandler implements InvocationHandler {
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
             for (int i = 0; i < args.length - 1; i++) {
-                if (!args[i].getClass().equals(Pageable.class) && !ignoredFields.contains(args[i]))
+                if (!args[i].getClass().equals(Pageable.class) && (!ignoredFields.contains(args[i])))
                     statement.setObject(i + 1, args[i]);
             }
             result = statementListExecutor(statement, ignoredFields);
@@ -284,7 +286,7 @@ public class RepositoryProxyHandler implements InvocationHandler {
         if (pageable != null) {
             try {
                 pageable.setTotalPages(
-                        ((Long) executeCountQuery(repositoryInterface.getMethod("countAll"), null) - pageable.getOffset() - 1) / pageable.getLimit()
+                        ((Long) executeCountQuery(repositoryInterface.getMethod("countAll"), new Object[]{}) - pageable.getOffset() - 1) / pageable.getLimit()
                 );
             } catch (NoSuchMethodException e) {
                 throw new RuntimeException(e);
@@ -384,7 +386,6 @@ public class RepositoryProxyHandler implements InvocationHandler {
                 EntityUtils.getRelationIdFieldName(valueClass)
         );
 
-        System.out.println(sql);
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setObject(1, id);

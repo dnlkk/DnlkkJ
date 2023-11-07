@@ -40,21 +40,22 @@ public class ControllerUtils {
                 Integer offset = null;
                 if (parametersMap.containsKey("offset"))
                     offset = Integer.parseInt(parametersMap.get("offset")[0]);
-                String sortBy = null;
-                if (parametersMap.containsKey("sortBy"))
-                    sortBy = parametersMap.get("sortBy")[0];
-                String sortHow = null;
-                if (parametersMap.containsKey("sortHow"))
-                    sortHow = parametersMap.get("sortHow")[0];
+                String[] sort = null;
+                if (parametersMap.containsKey("sort"))
+                    sort = parametersMap.get("sort");
 
                 Pageable.PageableBuilder pageableBuilder = Pageable.builder()
                         .limit(limit != null ? limit : 10)
                         .page(page != null ? page : 0)
                         .offset(offset != null ? offset : 0);
 
-                if (sortBy != null)
-                    if (sortHow != null) pageableBuilder.sort(new Sort(sortBy, sortHow));
-                    else pageableBuilder.sort(new Sort(sortBy));
+                if (sort != null) {
+                    List<Sort> sortList = new ArrayList<>();
+                    for (String sortString : sort) {
+                        sortList.add(new Sort(sortString.split(" ")));
+                    }
+                    pageableBuilder.sort(sortList.toArray(new Sort[0]));
+                }
 
                 parameters.add(pageableBuilder.build());
             } else if (parameter.isAnnotationPresent(RequestParam.class)) {

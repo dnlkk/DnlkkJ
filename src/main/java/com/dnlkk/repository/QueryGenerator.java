@@ -19,15 +19,16 @@ public class QueryGenerator {
         String methodName = method.getName();
         String[] methodParts = methodName.split("(?=[A-Z])"); // Разбиваем имя метода по заглавным буквам
         StringBuilder query = new StringBuilder();
-        List<String> ignoredFields = new ArrayList<>(Arrays.stream((String[]) args[args.length - 1]).toList());
 
-        Pageable pageable = null;
-        if (args != null)
-            pageable = Arrays.stream(args)
-                    .filter(arg -> arg.getClass().equals(Pageable.class))
-                    .findFirst()
-                    .map(Pageable.class::cast)
-                    .orElse(null);
+        List<String> ignoredFields = null;
+        if (args.length > 1)
+            ignoredFields = new ArrayList<>(Arrays.stream((String[]) args[args.length - 1]).toList());
+
+        Pageable pageable = Arrays.stream(args)
+                .filter(arg -> arg.getClass().equals(Pageable.class))
+                .findFirst()
+                .map(Pageable.class::cast)
+                .orElse(null);
 
         logger.debug(Arrays.toString(methodParts));
 
@@ -47,7 +48,8 @@ public class QueryGenerator {
             query.append("FROM ").append(tableName);
             boolean whereClauseAdded = false;
 
-            query.append(getReferencesJoin(references, tableName, ignoredFields));
+            if (methodParts[0].equals(QueryOperation.FIND.getValue()))
+                query.append(getReferencesJoin(references, tableName, ignoredFields));
 
             Field[] fields = valueClass.getDeclaredFields();
 
@@ -82,15 +84,16 @@ public class QueryGenerator {
 
             String resultQuery = query.toString();
 
-            if (pageable != null)
-                resultQuery = String.format("WITH RankedMessages AS (%s " +
-                                (pageable.getSort() != null ?
-                                        String.format(
-                                                "ORDER BY %s %s",
-                                                pageable.getSort().getBy(),
-                                                pageable.getSort().getHow()
-                                        ) : "")
-                                + ")" +
+            if (pageable != null) {
+                StringBuilder stringBuilder = new StringBuilder(" ORDER BY  ");
+                if (pageable.getSort() != null) {
+                    for (Sort sort : pageable.getSort()) {
+                        stringBuilder.append(sort.getBy()).append(" ").append(sort.getHow()).append(",");
+                    }
+                    stringBuilder.deleteCharAt(stringBuilder.length() - 1);
+                }
+
+                resultQuery = String.format("WITH RankedMessages AS (%s %s)" +
                                 ", UniqueRankedMessages AS (" +
                                 "    SELECT * " +
                                 "    FROM RankedMessages" +
@@ -100,13 +103,15 @@ public class QueryGenerator {
                                 ") " +
                                 "SELECT * " +
                                 "FROM RankedMessages " +
-                                "WHERE %4$s IN (SELECT %4$s FROM UniqueRankedMessages) "
+                                "WHERE %5$s IN (SELECT %5$s FROM UniqueRankedMessages) "
                         ,
                         resultQuery,
+                        stringBuilder,
                         pageable.getLimit(),
                         pageable.getLimit() * pageable.getPage() + pageable.getOffset(),
                         EntityUtils.getRelationIdFieldName(valueClass));
 
+            }
             logger.debug(resultQuery);
             return resultQuery;
         }

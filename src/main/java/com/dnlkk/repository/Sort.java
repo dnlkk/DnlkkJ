@@ -32,6 +32,16 @@ public class Sort {
         this.by = by;
         this.how = SortHow.ASC;
     }
+    public Sort(String[] queryParam) {
+        if (queryParam.length == 1) {
+            this.by = queryParam[0];
+            this.how = SortHow.ASC;
+        } else if (queryParam.length == 2) {
+            this.by = queryParam[0];
+            this.how = SortHow.valueOf(queryParam[1].toUpperCase());
+        } else
+            throw new RuntimeException("Only 2 params for sort");
+    }
 
     public Sort(String by, SortHow how) {
         this.by = by;
