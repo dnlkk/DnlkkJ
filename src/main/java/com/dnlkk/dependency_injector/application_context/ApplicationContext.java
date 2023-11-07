@@ -49,8 +49,9 @@ public abstract class ApplicationContext implements PeaFactory, ComponentContain
         peaFactory.setPeas(this.configScanner.scan(basePackage));
         componentFactory.initComponents(basePackage);
         dependencyInjector.inject(target);
-        componentFactory.getComponents().values().stream()
-            .forEach(component -> dependencyInjector.inject(component));
+
+        componentFactory.getComponents().values()
+            .forEach(dependencyInjector::inject);
     }
 
     @Override

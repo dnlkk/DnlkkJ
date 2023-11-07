@@ -32,7 +32,8 @@ public class DnlkkApplication {
     private Object run(String[] args) {
         try {
             Object app = primarySource.getConstructor().newInstance();
-            ApplicationContext applicationContext = this.applicationContextClass.getConstructor(Object.class).newInstance(app);
+
+            ApplicationContext applicationContext = applicationContextClass.getConstructor(Object.class).newInstance(app);
 
             if (this.primarySource.isAnnotationPresent(DnlkkWeb.class)) {
                 ControllerRegistry controllerRegistry = new ControllerRegistry();
