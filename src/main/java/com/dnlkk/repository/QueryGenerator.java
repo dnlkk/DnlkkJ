@@ -73,10 +73,9 @@ public class QueryGenerator {
                     case "and" -> query.append(" AND");
                 }
                 if (whereClauseAdded) {
-                    List<Field> list = Arrays.stream(fields).filter(field -> field.getName().toLowerCase().equals(part)).toList();
-                    if (!list.isEmpty()) {
-                        int methodParameterIndex = Arrays.stream(fields).toList().indexOf(list.get(0));
-                        String paramName = valueClass.getDeclaredFields()[methodParameterIndex].getName();
+                    Field fieldWhere = Arrays.stream(fields).filter(field -> field.getName().toLowerCase().startsWith(part)).findFirst().orElse(null);
+                    if (fieldWhere != null) {
+                        String paramName = EntityUtils.getColumnName(fieldWhere);
                         query.append(" ").append(tableName).append(".").append(paramName).append(" = ? ");
                     }
                 }
@@ -85,8 +84,9 @@ public class QueryGenerator {
             String resultQuery = query.toString();
 
             if (pageable != null) {
-                StringBuilder stringBuilder = new StringBuilder(" ORDER BY  ");
+                StringBuilder stringBuilder = new StringBuilder(" ");
                 if (pageable.getSort() != null) {
+                    stringBuilder.append(" ORDER BY  ");
                     for (Sort sort : pageable.getSort()) {
                         stringBuilder.append(sort.getBy()).append(" ").append(sort.getHow()).append(",");
                     }

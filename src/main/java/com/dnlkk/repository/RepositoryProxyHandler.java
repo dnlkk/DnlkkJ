@@ -204,7 +204,7 @@ public class RepositoryProxyHandler implements InvocationHandler {
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            for (int i = 0; i < args.length; i++) {
+            for (int i = 0; i < args.length - 1; i++) {
                 statement.setObject(i + 1, args[i]);
             }
 
@@ -225,6 +225,7 @@ public class RepositoryProxyHandler implements InvocationHandler {
         List<Object> result = new ArrayList<>();
 
         String[] queryParameters = SQLQueryUtil.getParamsFromQuery(sqlWithParams);
+
         List<String> ignoredFields = null;
         if (args.length > 1)
             ignoredFields = new ArrayList<>(Arrays.stream((String[]) args[args.length - 1]).toList());
