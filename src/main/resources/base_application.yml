@@ -1,4 +1,4 @@
 app:
-  version: 0.3.1
-  version_name: "A more, a more upgrades!"
+  version: 0.3.2
+  version_name: "*ch save, where * means 'Bat'"
   context-path: ""
