@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 import javax.sql.DataSource;
 
 import com.dnlkk.repository.annotations.entity.*;
+import com.dnlkk.repository.annotations.entity.Date;
 import com.dnlkk.util.EntityIgnoreUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +58,7 @@ public class RepositoryProxyHandler implements InvocationHandler {
             result = executeFindQuery(method, args2);
         } else if (method.getName().startsWith(QueryOperation.COUNT.getValue()) || method.getName().startsWith(QueryOperation.SUM.getValue())) {
             result = executeCountQuery(method, args2);
-        } else if (method.getName().equals(QueryOperation.SAVE.getValue())) {
+        } else if (method.getName().startsWith(QueryOperation.SAVE.getValue())) {
             result = saveEntity(arguments.get(0));
         } else if (method.getName().startsWith(QueryOperation.DELETE.getValue())) {
             deleteEntity(arguments.get(0));
@@ -301,79 +302,146 @@ public class RepositoryProxyHandler implements InvocationHandler {
         if (entity == null)
             return entity;
 
-        if (List.class.isAssignableFrom(entity.getClass())) {
-            for (Object subEntity : ((List) entity)) {
-                saveEntity(subEntity);
-            }
-            return entity;
-        }
-
-        String entityTableName = EntityUtils.getTableName(entity.getClass());
-        String entityFields = EntityUtils.getColumnNameStream(entity.getClass())
+        String entityTableName = EntityUtils.getTableName(valueClass);
+        String entityFields = EntityUtils.getColumnNameStream(valueClass, false, false)
                 .collect(Collectors.joining(","));
-        String sql = "INSERT INTO " + entityTableName + " (" + entityFields + ") VALUES (" + EntityUtils.generateQuestionMarks(entityFields) + ") RETURNING " + EntityUtils.getIdField(entity.getClass()).getName() + ";";
+        StringBuilder sql = new StringBuilder("INSERT INTO " + entityTableName + " (" + entityFields + ") VALUES ");
+        String updateSql = null;
 
+        List<Object> entities = new ArrayList<>();
+
+        if (List.class.isAssignableFrom(entity.getClass())) {
+            entities = new ArrayList<>((List) entity);
+        } else
+            entities.add(entity);
 
         try {
-            Field idField = EntityUtils.getIdField(entity.getClass());
+            Field idField = EntityUtils.getIdField(valueClass);
             idField.setAccessible(true);
-            Object id = idField.get(entity);
+            List<Object> id = new ArrayList<>();
+            for (Object subEntity : entities) {
+                Object idValue = idField.get(subEntity);
+                id.add(idValue);
+            }
+
+            for (Object idValue : id)
+                if (idValue == null)
+                    sql.append("(").append(EntityUtils.generateQuestionMarks(entityFields)).append("),");
+            if (sql.charAt(sql.length() - 1) == ',')
+                sql.deleteCharAt(sql.length() - 1);
+            sql.append(" RETURNING ").append(EntityUtils.getIdField(valueClass).getName());
 
             try {
-                if (id != null) {
-                    entityFields = EntityUtils.getColumnNameStream(entity.getClass())
-                            .collect(Collectors.joining(" = ?,")) + " = ?";
-                    sql = "UPDATE " + entityTableName + " SET " + entityFields + " WHERE " + EntityUtils.getColumnName(idField) + " = ?";
+                if (!id.isEmpty()) {
+                    entityFields = EntityUtils.getColumnNameStream(valueClass, false, true)
+                            .map(c -> new StringBuffer(c).append(" = a2.").append(c))
+                            .collect(Collectors.joining(","));
+
+                    String values = EntityUtils.getColumnNameStream(valueClass, true, true)
+                            .collect(Collectors.joining(","));
+
+                    StringBuilder stringBuilder = new StringBuilder();
+                    for (Object ignored : id)
+                        stringBuilder.append("(").append(EntityUtils.generateQuestionMarks(values)).append("),");
+                    stringBuilder.deleteCharAt(stringBuilder.length() - 1);
+                    updateSql = String.format(
+                            "UPDATE %s AS a SET %s FROM (VALUES %s ) AS a2(%s) WHERE a.%5$s = a2.%5$s;",
+                            tableName,
+                            entityFields,
+                            stringBuilder,
+                            values,
+                            EntityUtils.getColumnName(EntityUtils.getIdField(valueClass))
+                    );
                 }
             } catch (IllegalArgumentException | SecurityException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
 
-            logger.debug(sql);
+            logger.debug(sql.toString());
+            logger.debug(updateSql.toString());
 
-            try (Connection connection = dataSource.getConnection();
-                 PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            if (id.contains(null))
+                try (Connection connection = dataSource.getConnection();
+                     PreparedStatement statement = connection.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
+                    int k = 1;
+                    Field[] fields = valueClass.getDeclaredFields();
+                    for (int i = 0; i < entities.size(); i++) {
+                        if (id.get(i) != null)
+                            continue;
+                        for (Field field : fields) {
+                            if (EntityUtils.isNotPK(field) && EntityUtils.isNotFK(field) && !field.isAnnotationPresent(Date.class)) {
+                                field.setAccessible(true);
+                                Object fieldValue = field.get(entities.get(i));
 
-                int k = 1;
-                Field[] fields = entity.getClass().getDeclaredFields();
-                for (Field field : fields) {
-                    if (EntityUtils.isNotPK(field) && EntityUtils.isNotFK(field)) {
-                        field.setAccessible(true);
-                        Object fieldValue = field.get(entity);
+                                if (!EntityUtils.isNotRelation(field)) {
+                                    Field fieldFK = EntityUtils.getIdField(field.getType());
+                                    fieldFK.setAccessible(true);
+                                    fieldValue = fieldFK.get(field.get(entities.get(i)));
+                                }
 
-                        if (!EntityUtils.isNotRelation(field)) {
-                            Field fieldFK = EntityUtils.getIdField(field.getType());
-                            fieldFK.setAccessible(true);
-                            fieldValue = fieldFK.get(field.get(entity));
+                                statement.setObject(k, fieldValue);
+                                k++;
+                            } else if (!EntityUtils.isNotFK(field) && !field.isAnnotationPresent(OneToMany.class)) {
+                                field.setAccessible(true);
+                                Object fieldValue = field.get(entities.get(i));
+
+                                Field idFKField = EntityUtils.getIdField(fieldValue.getClass());
+                                idFKField.setAccessible(true);
+
+                                Object idFK = idFKField.get(fieldValue);
+                                statement.setObject(k, idFK);
+                                k++;
+                            }
                         }
+                    }
+                    statement.execute();
 
-                        statement.setObject(k, fieldValue);
-                        k++;
-                    } else if (!EntityUtils.isNotFK(field) && !field.isAnnotationPresent(OneToMany.class)) {
-                        field.setAccessible(true);
-                        Object fieldValue = field.get(entity);
-
-                        Field idFKField = EntityUtils.getIdField(fieldValue.getClass());
-                        idFKField.setAccessible(true);
-
-                        Object idFK = idFKField.get(fieldValue);
-                        statement.setObject(k, idFK);
-                        k++;
+                    ResultSet generatedKeys = statement.getGeneratedKeys();
+                    int i = 0;
+                    while (generatedKeys.next()) {
+                        Object generatedKey = generatedKeys.getObject(1);
+                        while (id.get(i) != null) i++;
+                        idField.set(entities.get(i), generatedKey);
                     }
                 }
-                if (id != null) {
-                    statement.setObject(k, id);
-                }
-                statement.execute();
 
-                ResultSet generatedKeys = statement.getGeneratedKeys();
-                if (generatedKeys.next()) {
-                    Object generatedKey = generatedKeys.getObject(1);
-                    idField.set(entity, generatedKey);
-                }
-            }
+            if (updateSql != null)
+                try (Connection connection = dataSource.getConnection();
+                     PreparedStatement statement = connection.prepareStatement(updateSql.toString())) {
+                    int k = 1;
+                    Field[] fields = valueClass.getDeclaredFields();
+                    for (int i = 0; i < entities.size(); i++) {
+                        if (id.get(i) == null)
+                            continue;
+                        for (Field field : fields) {
+                            if (EntityUtils.isNotFK(field) && !field.isAnnotationPresent(Date.class)) {
+                                field.setAccessible(true);
+                                Object fieldValue = field.get(entities.get(i));
 
+                                if (!EntityUtils.isNotRelation(field)) {
+                                    Field fieldFK = EntityUtils.getIdField(field.getType());
+                                    fieldFK.setAccessible(true);
+                                    fieldValue = fieldFK.get(field.get(entities.get(i)));
+                                }
+
+                                statement.setObject(k, fieldValue);
+                                k++;
+                            } else if (!EntityUtils.isNotFK(field) && !field.isAnnotationPresent(OneToMany.class)) {
+                                field.setAccessible(true);
+                                Object fieldValue = field.get(entities.get(i));
+
+                                Field idFKField = EntityUtils.getIdField(fieldValue.getClass());
+                                idFKField.setAccessible(true);
+
+                                Object idFK = idFKField.get(fieldValue);
+                                statement.setObject(k, idFK);
+                                k++;
+                            }
+                        }
+                    }
+                    statement.execute();
+                }
         } catch (SQLException | IllegalAccessException e) {
             e.printStackTrace();
         }

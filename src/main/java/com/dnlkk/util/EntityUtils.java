@@ -5,14 +5,7 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import com.dnlkk.repository.annotations.entity.Column;
-import com.dnlkk.repository.annotations.entity.FK;
-import com.dnlkk.repository.annotations.entity.PK;
-import com.dnlkk.repository.annotations.entity.Table;
-import com.dnlkk.repository.annotations.entity.ManyToMany;
-import com.dnlkk.repository.annotations.entity.ManyToOne;
-import com.dnlkk.repository.annotations.entity.OneToMany;
-import com.dnlkk.repository.annotations.entity.OneToOne;
+import com.dnlkk.repository.annotations.entity.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class EntityUtils {
@@ -55,9 +48,12 @@ public class EntityUtils {
         return columnField.getName();
     }
 
-    public static Stream<String> getColumnNameStream(Class<?> valueClass) {
+    public static Stream<String> getColumnNameStream(Class<?> valueClass, boolean withId, boolean withFk) {
         return Arrays.stream(valueClass.getDeclaredFields())
-            .filter(field -> isNotPK(field) && !field.isAnnotationPresent(OneToMany.class))
+            .filter(field ->
+                    (isNotPK(field) || (withId && !isNotPK(field)))
+                            && (isNotFK(field) || (withFk && !isNotFK(field))) && !field.isAnnotationPresent(OneToMany.class)
+                            && !field.isAnnotationPresent(Date.class))
             .map(EntityUtils::getColumnName);
     }
 
