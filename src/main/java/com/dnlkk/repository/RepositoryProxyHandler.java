@@ -303,7 +303,7 @@ public class RepositoryProxyHandler implements InvocationHandler {
             return entity;
 
         String entityTableName = EntityUtils.getTableName(valueClass);
-        String entityFields = EntityUtils.getColumnNameStream(valueClass, false, false)
+        String entityFields = EntityUtils.getColumnNameStream(valueClass, false, true)
                 .collect(Collectors.joining(","));
         StringBuilder sql = new StringBuilder("INSERT INTO " + entityTableName + " (" + entityFields + ") VALUES ");
         String updateSql = null;
@@ -332,7 +332,7 @@ public class RepositoryProxyHandler implements InvocationHandler {
             sql.append(" RETURNING ").append(EntityUtils.getIdField(valueClass).getName());
 
             try {
-                if (!id.isEmpty()) {
+                if (!id.stream().filter(Objects::nonNull).toList().isEmpty()) {
                     entityFields = EntityUtils.getColumnNameStream(valueClass, false, true)
                             .map(c -> new StringBuffer(c).append(" = a2.").append(c))
                             .collect(Collectors.joining(","));
@@ -358,8 +358,10 @@ public class RepositoryProxyHandler implements InvocationHandler {
                 e.printStackTrace();
             }
 
-            logger.debug(sql.toString());
-            logger.debug(updateSql.toString());
+            if (id.contains(null))
+                logger.debug(sql.toString());
+            if (updateSql != null)
+                logger.debug(updateSql.toString());
 
             if (id.contains(null))
                 try (Connection connection = dataSource.getConnection();
@@ -403,7 +405,10 @@ public class RepositoryProxyHandler implements InvocationHandler {
                         Object generatedKey = generatedKeys.getObject(1);
                         while (id.get(i) != null) i++;
                         idField.set(entities.get(i), generatedKey);
+                        i++;
                     }
+                } catch (Exception e) {
+                    logger.error(e.getMessage());
                 }
 
             if (updateSql != null)
