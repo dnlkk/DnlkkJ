@@ -51,4 +51,8 @@ public class Sort {
         this.by = by;
         this.how = SortHow.valueOf(how.toUpperCase());
     }
+
+    public static Sort randomSort() {
+        return new Sort("random()");
+    }
 }

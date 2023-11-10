@@ -11,4 +11,8 @@ public class Pageable {
     private int page;
     private Long totalPages;
     private Sort[] sort;
+
+    public static Pageable randomPageable() {
+        return Pageable.builder().limit(1).sort(new Sort[]{Sort.randomSort()}).build();
+    }
 }
