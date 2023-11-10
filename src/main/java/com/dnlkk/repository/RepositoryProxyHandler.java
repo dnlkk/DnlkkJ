@@ -36,11 +36,14 @@ public class RepositoryProxyHandler implements InvocationHandler {
     private Class<?> repositoryInterface;
     private List<Field> references;
     private final Logger logger = LoggerFactory.getLogger(RepositoryProxyHandler.class);
+    private final Map<String, String> typesMap = new HashMap<>();
 
     public RepositoryProxyHandler(Class<?> clazz) {
         repositoryInterface = clazz;
         this.dataSource = DnlkkDataSourceFactory.createDataSource();
         references = new ArrayList<>();
+        typesMap.put("integer", "INTEGER");
+        typesMap.put("string", "TEXT");
     }
 
     @Override
@@ -232,6 +235,7 @@ public class RepositoryProxyHandler implements InvocationHandler {
             ignoredFields = new ArrayList<>(Arrays.stream((String[]) args[args.length - 1]).toList());
 
         String sql = SQLQueryUtil.removeParamsFromQuery(sqlWithParams, queryParameters);
+        sql = sql.replace("FROM", QueryGenerator.getReferencesAs(references, ignoredFields) + " FROM");
         sql = sql.replace("WHERE", QueryGenerator.getReferencesJoin(references, tableName, ignoredFields) + " WHERE");
 
         logger.debug(Arrays.toString(queryParameters));
@@ -268,7 +272,7 @@ public class RepositoryProxyHandler implements InvocationHandler {
     private List<Object> executeFindQuery(Method method, Object[] args) {
         String sql = QueryGenerator.generateQuery(method, tableName, valueClass, references, args);
         List<Object> result = new ArrayList<>();
-        List<String> ignoredFields = null;
+        List<String> ignoredFields = new ArrayList<>();
         if (args.length > 1)
             ignoredFields = new ArrayList<>(Arrays.stream((String[]) args[args.length - 1]).toList());
 
@@ -278,8 +282,13 @@ public class RepositoryProxyHandler implements InvocationHandler {
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
             for (int i = 0; i < args.length - 1; i++) {
-                if (!args[i].getClass().equals(Pageable.class) && (!ignoredFields.contains(args[i])))
-                    statement.setObject(i + 1, args[i]);
+                if (!args[i].getClass().equals(Pageable.class) && !ignoredFields.contains(args[i])) {
+                    if (args[i].getClass().isArray()) {
+                        statement.setArray(i + 1, connection.createArrayOf("integer", (Object[]) args[i]));
+                    }
+                    else
+                        statement.setObject(i + 1, args[i]);
+                }
             }
             result = statementListExecutor(statement, ignoredFields);
         } catch (SQLException e) {

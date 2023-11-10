@@ -47,6 +47,7 @@ public class QueryGenerator {
 
             query.append("FROM ").append(tableName);
             boolean whereClauseAdded = false;
+            boolean inClause = false;
 
             if (methodParts[0].equals(QueryOperation.FIND.getValue()))
                 query.append(getReferencesJoin(references, tableName, ignoredFields));
@@ -69,6 +70,13 @@ public class QueryGenerator {
                             whereClauseAdded = true;
                         }
                     }
+                    case "in" -> {
+                        if (!whereClauseAdded) {
+                            query.append(" WHERE");
+                            whereClauseAdded = true;
+                            inClause = true;
+                        }
+                    }
                     case "or" -> query.append(" OR");
                     case "and" -> query.append(" AND");
                 }
@@ -76,7 +84,11 @@ public class QueryGenerator {
                     Field fieldWhere = Arrays.stream(fields).filter(field -> field.getName().toLowerCase().startsWith(part)).findFirst().orElse(null);
                     if (fieldWhere != null) {
                         String paramName = EntityUtils.getColumnName(fieldWhere);
-                        query.append(" ").append(tableName).append(".").append(paramName).append(" = ? ");
+                        query.append(" ").append(tableName).append(".").append(paramName);
+                        if (inClause)
+                            query.append(" = ANY(?) ");
+                        else
+                            query.append(" = ? ");
                     }
                 }
             }
