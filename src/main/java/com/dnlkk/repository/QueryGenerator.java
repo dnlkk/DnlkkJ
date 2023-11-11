@@ -48,6 +48,7 @@ public class QueryGenerator {
             query.append("FROM ").append(tableName);
             boolean whereClauseAdded = false;
             boolean inClause = false;
+            boolean onlyOne = false;
 
             if (methodParts[0].equals(QueryOperation.FIND.getValue()))
                 query.append(getReferencesJoin(references, tableName, ignoredFields));
@@ -63,6 +64,9 @@ public class QueryGenerator {
                 switch (part) {
                     case "all" -> {
                         continue;
+                    }
+                    case "only" -> {
+                        onlyOne = true;
                     }
                     case "by" -> {
                         if (!whereClauseAdded) {
@@ -113,7 +117,13 @@ public class QueryGenerator {
                                 "    LIMIT %d " +
                                 "    OFFSET %d " +
                                 ") " +
-                                "SELECT * " +
+                                "SELECT " +
+                                (onlyOne ?
+                                        " DISTINCT ON (" +
+                                                EntityUtils.getColumnName(EntityUtils.getIdField(valueClass)) +
+                                                " )"
+                                        : "") +
+                                " * " +
                                 "FROM RankedMessages " +
                                 "WHERE %5$s IN (SELECT %5$s FROM UniqueRankedMessages) "
                         ,
