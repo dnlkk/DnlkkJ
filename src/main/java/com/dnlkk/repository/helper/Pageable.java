@@ -1,4 +1,4 @@
-package com.dnlkk.repository;
+package com.dnlkk.repository.helper;
 
 import lombok.Builder;
 import lombok.Data;
