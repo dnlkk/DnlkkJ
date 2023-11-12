@@ -3,6 +3,9 @@ package com.dnlkk.repository;
 import java.lang.reflect.*;
 import java.util.*;
 
+import com.dnlkk.repository.helper.Interval;
+import com.dnlkk.repository.helper.Pageable;
+import com.dnlkk.repository.helper.Sort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +53,9 @@ public class QueryGenerator {
             boolean inClause = false;
             boolean onlyOne = false;
 
+            boolean greaterThan = false;
+            boolean lessThan = false;
+
             if (methodParts[0].equals(QueryOperation.FIND.getValue()))
                 query.append(getReferencesJoin(references, tableName, ignoredFields));
 
@@ -74,6 +80,19 @@ public class QueryGenerator {
                             whereClauseAdded = true;
                         }
                     }
+                    case "gt" -> greaterThan = true;
+                    case "lt" -> lessThan = true;
+                    case "interval" -> {
+                        Interval interval = (Interval) Arrays.stream(args)
+                                .filter(arg -> arg.getClass().equals(Interval.class))
+                                .findFirst()
+                                .orElse(null);
+                        if (interval == null)
+                            break;
+
+                        query.deleteCharAt(query.length() - 1);
+                        query.append(" CURRENT_TIMESTAMP - INTERVAL '" + interval.getValue() + " " + interval.getDate() + "'");
+                    }
                     case "in" -> {
                         if (!whereClauseAdded) {
                             query.append(" WHERE");
@@ -91,8 +110,14 @@ public class QueryGenerator {
                         query.append(" ").append(tableName).append(".").append(paramName);
                         if (inClause)
                             query.append(" = ANY(?) ");
+                        else if (greaterThan)
+                            query.append(" >= ?");
+                        else if (lessThan)
+                            query.append(" <= ?");
                         else
                             query.append(" = ? ");
+                        lessThan = false;
+                        greaterThan = false;
                     }
                 }
             }
@@ -166,7 +191,7 @@ public class QueryGenerator {
                         if (targetKey == null)
                             continue;
 
-                        builder.append(",").append(targetTableName).append(".").append(targetKey).append(" AS ").append(targetTableName).append(targetKey).append(" ");
+                        builder.append(",").append(targetTableName).append(".").append(targetKey).append(" AS ").append(targetTableName).append("_").append(targetKey).append(" ");
                     }
                 }
                 includedTableNames.add(targetTableName);

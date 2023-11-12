@@ -14,6 +14,8 @@ import javax.sql.DataSource;
 
 import com.dnlkk.repository.annotations.entity.*;
 import com.dnlkk.repository.annotations.entity.Date;
+import com.dnlkk.repository.helper.Interval;
+import com.dnlkk.repository.helper.Pageable;
 import com.dnlkk.util.EntityIgnoreUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +58,7 @@ public class RepositoryProxyHandler implements InvocationHandler {
 
         Object result = null;
         if (method.isAnnotationPresent(Query.class)) {
-            result = executeCustomQuery(method.getAnnotation(Query.class).value(), args2, method.getParameters());
+            result = executeCustomQuery(method.getAnnotation(Query.class), args2, method.getParameters());
         } else if (method.getName().startsWith(QueryOperation.FIND.getValue())) {
             result = executeFindQuery(method, args2);
         } else if (method.getName().startsWith(QueryOperation.COUNT.getValue()) || method.getName().startsWith(QueryOperation.SUM.getValue())) {
@@ -141,7 +143,7 @@ public class RepositoryProxyHandler implements InvocationHandler {
 
                             for (Field relationField : relationClazz.getDeclaredFields()) {
                                 if (EntityUtils.isNotRelation(relationField)) {
-                                    Object retrievedObject = resultSet.getObject(EntityUtils.getTableName(relationField.getDeclaringClass()) + EntityUtils.getColumnName(relationField));
+                                    Object retrievedObject = resultSet.getObject(EntityUtils.getTableName(relationField.getDeclaringClass()) + "_" + EntityUtils.getColumnName(relationField));
                                     DependencyInjector.setField(relationEntity, retrievedObject, relationField);
                                 } else {
                                     try {
@@ -209,7 +211,8 @@ public class RepositoryProxyHandler implements InvocationHandler {
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
             for (int i = 0; i < args.length - 1; i++) {
-                statement.setObject(i + 1, args[i]);
+                if (!args[i].getClass().equals(Interval.class))
+                    statement.setObject(i + 1, args[i]);
             }
 
             try (ResultSet resultSet = statement.executeQuery()) {
@@ -225,18 +228,20 @@ public class RepositoryProxyHandler implements InvocationHandler {
         return result;
     }
 
-    private List<Object> executeCustomQuery(String sqlWithParams, Object[] args, Parameter[] parameters) {
+    private List<Object> executeCustomQuery(Query query, Object[] args, Parameter[] parameters) {
         List<Object> result = new ArrayList<>();
 
-        String[] queryParameters = SQLQueryUtil.getParamsFromQuery(sqlWithParams);
+        String[] queryParameters = SQLQueryUtil.getParamsFromQuery(query.value());
 
         List<String> ignoredFields = null;
         if (args.length > 1)
             ignoredFields = new ArrayList<>(Arrays.stream((String[]) args[args.length - 1]).toList());
 
-        String sql = SQLQueryUtil.removeParamsFromQuery(sqlWithParams, queryParameters);
-        sql = sql.replace("FROM", QueryGenerator.getReferencesAs(references, ignoredFields) + " FROM");
-        sql = sql.replace("WHERE", QueryGenerator.getReferencesJoin(references, tableName, ignoredFields) + " WHERE");
+        String sql = SQLQueryUtil.removeParamsFromQuery(query.value(), queryParameters);
+        if (query.autoReference()) {
+            sql = sql.replace("FROM", QueryGenerator.getReferencesAs(references, ignoredFields) + " FROM");
+            sql = sql.replace("WHERE", QueryGenerator.getReferencesJoin(references, tableName, ignoredFields) + " WHERE");
+        }
 
         logger.debug(Arrays.toString(queryParameters));
         logger.debug(sql);
@@ -260,8 +265,13 @@ public class RepositoryProxyHandler implements InvocationHandler {
                 }
             }
 
-            result = statementListExecutor(statement, ignoredFields);
-
+            try {
+                result = statementListExecutor(statement, ignoredFields);
+            } catch (Exception e) {
+                ResultSet resultSet = statement.executeQuery();
+                for (int i = 1; resultSet.next(); i++)
+                    result.add(resultSet.getObject(i));
+            }
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -282,11 +292,12 @@ public class RepositoryProxyHandler implements InvocationHandler {
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
             for (int i = 0; i < args.length - 1; i++) {
-                if (!args[i].getClass().equals(Pageable.class) && !ignoredFields.contains(args[i])) {
+                if (!args[i].getClass().equals(Interval.class)
+                        && !args[i].getClass().equals(Pageable.class)
+                        && !ignoredFields.contains(args[i])) {
                     if (args[i].getClass().isArray()) {
                         statement.setArray(i + 1, connection.createArrayOf("integer", (Object[]) args[i]));
-                    }
-                    else
+                    } else
                         statement.setObject(i + 1, args[i]);
                 }
             }
