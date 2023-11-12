@@ -29,10 +29,10 @@ public class EntityIgnoreUtils {
 
                 String finalIgnoredField = ignoredField;
                 if (Arrays.stream(valueClass.getDeclaredFields()).filter(field -> field.getName().equals(finalIgnoredField)).toArray().length != 0) {
-                    ignored.add(ignoredField);
+                    ignored.add(finalIgnoredField);
                     stringBuilder = new StringBuilder();
                 } else if (stringBuilder.isEmpty())
-                    stringBuilder.append(ignoredFieldTemp);
+                    stringBuilder.append(finalIgnoredField);
             }
         }
         return ignored.toArray(new String[0]);

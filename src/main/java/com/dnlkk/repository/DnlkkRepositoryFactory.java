@@ -5,6 +5,7 @@ import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 
+import com.dnlkk.repository.annotations.entity.With;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,16 +25,21 @@ public class DnlkkRepositoryFactory {
             handler.setTableName(tableName);
             handler.setKeyClass(getKeyClass(clazz));
             handler.setValueClass(getValueClass(clazz));
-            handler.setReferences(Arrays.stream(handler.getValueClass().getDeclaredFields()).filter(field -> !EntityUtils.isNotRelation(field)).toList());
-            
+            handler.setReferences(Arrays.stream(handler.getValueClass().getDeclaredFields())
+                    .filter(field -> !EntityUtils.isNotRelation(field) || field.isAnnotationPresent(With.class))
+                    .toList());
+
             try {
-                DnlkkRepository proxyObject = (DnlkkRepository) Proxy.newProxyInstance( clazz.getClassLoader(), new Class[]{clazz, DnlkkRepository.class}, handler);
+                DnlkkRepository proxyObject = (DnlkkRepository) Proxy.newProxyInstance(
+                        clazz.getClassLoader(),
+                        new Class[]{clazz, DnlkkRepository.class},
+                        handler
+                );
                 if (proxyObject == null) {
                     logger.error("Repository creation failed");
                     throw new Exception("Repository creation failed");
-                }
-                else 
-                    return proxyObject; 
+                } else
+                    return proxyObject;
             } catch (Exception e) {
                 e.printStackTrace();
                 System.exit(1);
@@ -45,10 +51,10 @@ public class DnlkkRepositoryFactory {
 
     private static <K, V> String extractTableNameFromEntityClass(Class<?> entityClass) {
         Table tableAnnotation = entityClass.getAnnotation(Table.class);
-    
-        if (tableAnnotation != null) 
+
+        if (tableAnnotation != null)
             return tableAnnotation.value();
-    
+
         logger.error("No @Table annotation found on the entity class");
         throw new IllegalArgumentException("No @Table annotation found on the entity class.");
     }

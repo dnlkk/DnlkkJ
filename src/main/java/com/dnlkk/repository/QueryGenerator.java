@@ -3,6 +3,7 @@ package com.dnlkk.repository;
 import java.lang.reflect.*;
 import java.util.*;
 
+import com.dnlkk.repository.annotations.entity.With;
 import com.dnlkk.repository.helper.Interval;
 import com.dnlkk.repository.helper.Pageable;
 import com.dnlkk.repository.helper.Sort;
@@ -45,8 +46,9 @@ public class QueryGenerator {
                 query.append("SELECT SUM( DISTINCT ").append(tableName).append(".").append(methodParts[1].toLowerCase()).append(") ");
 
 
-            if (pageable != null)
+            if (pageable != null) {
                 query.append(String.format(",ROW_NUMBER() OVER (PARTITION BY %1$s.%2$s ORDER BY %1$s.%2$s) AS rn ", tableName, EntityUtils.getRelationIdFieldName(valueClass)));
+            }
 
             query.append("FROM ").append(tableName);
             boolean whereClauseAdded = false;
@@ -71,9 +73,7 @@ public class QueryGenerator {
                     case "all" -> {
                         continue;
                     }
-                    case "only" -> {
-                        onlyOne = true;
-                    }
+                    case "only" -> onlyOne = true;
                     case "by" -> {
                         if (!whereClauseAdded) {
                             query.append(" WHERE");
@@ -91,7 +91,7 @@ public class QueryGenerator {
                             break;
 
                         query.deleteCharAt(query.length() - 1);
-                        query.append(" CURRENT_TIMESTAMP - INTERVAL '" + interval.getValue() + " " + interval.getDate() + "'");
+                        query.append(" CURRENT_TIMESTAMP - INTERVAL '").append(interval.getValue()).append(" ").append(interval.getDate()).append("'");
                     }
                     case "in" -> {
                         if (!whereClauseAdded) {
@@ -122,6 +122,16 @@ public class QueryGenerator {
                 }
             }
 
+            if (pageable != null)
+                query.append(
+                        String.format(
+                                " ORDER BY %s.%s%s",
+                                tableName,
+                                EntityUtils.getRelationIdFieldName(valueClass),
+                                getReferencesOrder(references, ignoredFields)
+                        )
+                );
+
             String resultQuery = query.toString();
 
             if (pageable != null) {
@@ -134,29 +144,32 @@ public class QueryGenerator {
                     stringBuilder.deleteCharAt(stringBuilder.length() - 1);
                 }
 
-                resultQuery = String.format("WITH RankedMessages AS (%s %s)" +
+                resultQuery = String.format(
+                        "WITH RankedMessages AS (%s)" +
                                 ", UniqueRankedMessages AS (" +
                                 "    SELECT * " +
                                 "    FROM RankedMessages" +
                                 "    WHERE rn = 1 " +
+                                " %s" +
                                 "    LIMIT %d " +
                                 "    OFFSET %d " +
                                 ") " +
-                                "SELECT " +
+                                "SELECT * FROM(SELECT " +
                                 (onlyOne ?
                                         " DISTINCT ON (" +
                                                 EntityUtils.getColumnName(EntityUtils.getIdField(valueClass)) +
-                                                " )"
-                                        : "") +
+                                                " ) "
+                                        : " ") +
                                 " * " +
                                 "FROM RankedMessages " +
-                                "WHERE %5$s IN (SELECT %5$s FROM UniqueRankedMessages) "
-                        ,
+                                "WHERE %5$s IN (SELECT %5$s FROM UniqueRankedMessages)) Z %6$s",
                         resultQuery,
                         stringBuilder,
                         pageable.getLimit(),
                         pageable.getLimit() * pageable.getPage() + pageable.getOffset(),
-                        EntityUtils.getRelationIdFieldName(valueClass));
+                        EntityUtils.getRelationIdFieldName(valueClass),
+                        stringBuilder
+                );
 
             }
             logger.debug(resultQuery);
@@ -165,14 +178,64 @@ public class QueryGenerator {
         return null;
     }
 
+    public static String getReferencesOrder(List<Field> references, List<String> ignoredFields) {
+        StringBuilder builder = new StringBuilder(" ");
+        Set<String> includedTableNames = new HashSet<>();
+        if (!references.isEmpty()) {
+            for (Field field : references) {
+                if (ignoredFields.contains(field.getName()) || field.isAnnotationPresent(With.class))
+                    continue;
+                String sourceKey = EntityUtils.getColumnName(EntityUtils.getIdField(references.get(0).getDeclaringClass()));
+                Class<?> targetClass;
+
+                if (field.getType() == List.class)
+                    targetClass = (Class<?>) ((ParameterizedType) field.getGenericType()).getActualTypeArguments()[0];
+                else
+                    targetClass = (Class<?>) field.getGenericType();
+
+                String targetTableName = targetClass.getAnnotation(Table.class).value();
+
+
+                String targetKey = null;
+                if ((field.isAnnotationPresent(OneToOne.class))
+                        || (field.isAnnotationPresent(ManyToOne.class))) {
+                    targetKey = EntityUtils.getColumnName(EntityUtils.getIdField(targetClass));
+                    sourceKey = EntityUtils.getColumnName(field);
+                } else {
+                    for (Field targetField : targetClass.getDeclaredFields()) {
+                        if (field.isAnnotationPresent(With.class))
+                            continue;
+                        if ((targetField.isAnnotationPresent(OneToOne.class) && targetField.getAnnotation(OneToOne.class).value().equals(field.getName()))
+                                || (targetField.isAnnotationPresent(ManyToOne.class) && targetField.getAnnotation(ManyToOne.class).value().equals(field.getName()))) {
+                            targetKey = EntityUtils.getColumnName(targetField);
+                        }
+                    }
+                }
+
+                if (targetKey == null)
+                    continue;
+
+                if (!includedTableNames.contains(targetTableName))
+                    builder.append(",").append(targetTableName).append(".").append(sourceKey);
+                includedTableNames.add(targetTableName);
+            }
+        }
+        return builder.toString();
+    }
+
     public static String getReferencesAs(List<Field> references, List<String> ignoredFields) {
         StringBuilder builder = new StringBuilder(" ");
         List<String> includedTableNames = new ArrayList<>();
         if (!references.isEmpty()) {
-
             for (Field field : references) {
                 if (ignoredFields.contains(field.getName()))
                     continue;
+
+                if (field.isAnnotationPresent(With.class)) {
+                    builder.append(",(").append(field.getAnnotation(With.class).value()).append(") as ").append(EntityUtils.getColumnName(field));
+                    continue;
+                }
+
                 Class<?> targetClass;
 
                 if (field.getType() == List.class)
@@ -185,6 +248,8 @@ public class QueryGenerator {
                     continue;
 
                 for (Field targetField : targetClass.getDeclaredFields()) {
+                    if (field.isAnnotationPresent(With.class))
+                        continue;
                     if (EntityUtils.isNotFK(targetField) || (targetField.isAnnotationPresent(OneToOne.class) && targetField.getAnnotation(OneToOne.class).value().equals(field.getName()))
                             || (targetField.isAnnotationPresent(ManyToOne.class) && targetField.getAnnotation(ManyToOne.class).value().equals(field.getName()))) {
                         String targetKey = EntityUtils.getColumnName(targetField);
@@ -205,7 +270,7 @@ public class QueryGenerator {
         Set<String> includedTableNames = new HashSet<>();
         if (!references.isEmpty()) {
             for (Field field : references) {
-                if (ignoredFields.contains(field.getName()))
+                if (ignoredFields.contains(field.getName()) || field.isAnnotationPresent(With.class))
                     continue;
                 String sourceKey = EntityUtils.getColumnName(EntityUtils.getIdField(references.get(0).getDeclaringClass()));
                 Class<?> targetClass;
@@ -225,6 +290,8 @@ public class QueryGenerator {
                     sourceKey = EntityUtils.getColumnName(field);
                 } else {
                     for (Field targetField : targetClass.getDeclaredFields()) {
+                        if (field.isAnnotationPresent(With.class))
+                            continue;
                         if ((targetField.isAnnotationPresent(OneToOne.class) && targetField.getAnnotation(OneToOne.class).value().equals(field.getName()))
                                 || (targetField.isAnnotationPresent(ManyToOne.class) && targetField.getAnnotation(ManyToOne.class).value().equals(field.getName()))) {
                             targetKey = EntityUtils.getColumnName(targetField);
