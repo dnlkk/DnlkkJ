@@ -24,7 +24,7 @@ public class QueryGenerator {
         String[] methodParts = methodName.split("(?=[A-Z])"); // Разбиваем имя метода по заглавным буквам
         StringBuilder query = new StringBuilder();
 
-        List<String> ignoredFields = null;
+        List<String> ignoredFields = new ArrayList<>();
         if (args.length > 1)
             ignoredFields = new ArrayList<>(Arrays.stream((String[]) args[args.length - 1]).toList());
 

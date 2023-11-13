@@ -52,6 +52,8 @@ public class RepositoryProxyHandler implements InvocationHandler {
     public Object invoke(Object proxy, Method method, Object[] args) {
         String[] ignoredFields = EntityIgnoreUtils.getIgnoredFieldFromMethod(method, valueClass);
 
+        if (args == null)
+            args = new String[]{};
         List<Object> arguments = new ArrayList<>(Arrays.stream(args).toList());
         arguments.add(ignoredFields);
         Object[] args2 = arguments.toArray(new Object[0]);
