@@ -142,6 +142,8 @@ public class RepositoryProxyHandler implements InvocationHandler {
                                 DependencyInjector.setField(entity, relationEntity, field);
 
                             for (Field relationField : relationClazz.getDeclaredFields()) {
+                                if (relationField.isAnnotationPresent(With.class))
+                                    continue;
                                 if (EntityUtils.isNotRelation(relationField)) {
                                     Object retrievedObject = resultSet.getObject(EntityUtils.getTableName(relationField.getDeclaringClass()) + "_" + EntityUtils.getColumnName(relationField));
                                     DependencyInjector.setField(relationEntity, retrievedObject, relationField);

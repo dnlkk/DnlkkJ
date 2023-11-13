@@ -185,7 +185,6 @@ public class QueryGenerator {
             for (Field field : references) {
                 if (ignoredFields.contains(field.getName()) || field.isAnnotationPresent(With.class))
                     continue;
-                String sourceKey = EntityUtils.getColumnName(EntityUtils.getIdField(references.get(0).getDeclaringClass()));
                 Class<?> targetClass;
 
                 if (field.getType() == List.class)
@@ -200,7 +199,6 @@ public class QueryGenerator {
                 if ((field.isAnnotationPresent(OneToOne.class))
                         || (field.isAnnotationPresent(ManyToOne.class))) {
                     targetKey = EntityUtils.getColumnName(EntityUtils.getIdField(targetClass));
-                    sourceKey = EntityUtils.getColumnName(field);
                 } else {
                     for (Field targetField : targetClass.getDeclaredFields()) {
                         if (field.isAnnotationPresent(With.class))
@@ -216,7 +214,7 @@ public class QueryGenerator {
                     continue;
 
                 if (!includedTableNames.contains(targetTableName))
-                    builder.append(",").append(targetTableName).append(".").append(sourceKey);
+                    builder.append(",").append(targetTableName).append(".").append(targetKey);
                 includedTableNames.add(targetTableName);
             }
         }
@@ -248,7 +246,7 @@ public class QueryGenerator {
                     continue;
 
                 for (Field targetField : targetClass.getDeclaredFields()) {
-                    if (field.isAnnotationPresent(With.class))
+                    if (targetField.isAnnotationPresent(With.class))
                         continue;
                     if (EntityUtils.isNotFK(targetField) || (targetField.isAnnotationPresent(OneToOne.class) && targetField.getAnnotation(OneToOne.class).value().equals(field.getName()))
                             || (targetField.isAnnotationPresent(ManyToOne.class) && targetField.getAnnotation(ManyToOne.class).value().equals(field.getName()))) {
