@@ -287,7 +287,7 @@ public class RepositoryProxyHandler implements InvocationHandler {
         String sql = QueryGenerator.generateQuery(method, tableName, valueClass, references, args);
         List<Object> result = new ArrayList<>();
         List<String> ignoredFields = new ArrayList<>();
-        if (args.length > 1)
+        if (args.length > 0)
             ignoredFields = new ArrayList<>(Arrays.stream((String[]) args[args.length - 1]).toList());
 
         Pageable pageable = (Pageable) Arrays.stream(args).filter(arg -> arg.getClass().isAssignableFrom(Pageable.class)).findFirst().orElse(null);

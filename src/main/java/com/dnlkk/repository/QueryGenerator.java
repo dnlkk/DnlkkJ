@@ -25,7 +25,7 @@ public class QueryGenerator {
         StringBuilder query = new StringBuilder();
 
         List<String> ignoredFields = new ArrayList<>();
-        if (args.length > 1)
+        if (args.length > 0)
             ignoredFields = new ArrayList<>(Arrays.stream((String[]) args[args.length - 1]).toList());
 
         Pageable pageable = Arrays.stream(args)
