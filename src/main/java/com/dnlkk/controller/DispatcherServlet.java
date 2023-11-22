@@ -3,6 +3,7 @@ package com.dnlkk.controller;
 import com.dnlkk.boot.AppConfig;
 import com.dnlkk.controller.annotations.request_method.*;
 import com.dnlkk.controller.annotations.RequestMapping;
+import com.dnlkk.security.Security;
 import com.dnlkk.util.ControllerUtils;
 import com.dnlkk.util.PathUtils;
 import jakarta.servlet.http.HttpServlet;
@@ -33,6 +34,9 @@ public abstract class DispatcherServlet extends HttpServlet {
 
     public boolean dispatch(HttpServletResponse response, HttpServletRequest request) {
         Map<String, String[]> parametersMap = request.getParameterMap();
+
+        Security.getCorsPolicy().request(request);
+        Security.getCorsPolicy().response(response);
 
         Map.Entry<String, Object> entryMapController = getEntryMapControllerFromRequest(request);
 

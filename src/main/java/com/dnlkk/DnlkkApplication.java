@@ -6,6 +6,9 @@ import com.dnlkk.boot.Banner;
 import com.dnlkk.controller.ControllerRegistry;
 import com.dnlkk.controller.JspDispatcherServlet;
 import com.dnlkk.dependency_injector.annotations.components.Controller;
+import com.dnlkk.security.CORSPolicy;
+import com.dnlkk.security.Security;
+import com.dnlkk.security.annotations.CORS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,11 +42,15 @@ public class DnlkkApplication {
                 ControllerRegistry controllerRegistry = new ControllerRegistry();
                 ApiDispatcherServlet apiDispatcherServlet = new ApiDispatcherServlet(controllerRegistry);
                 JspDispatcherServlet jspDispatcherServlet = new JspDispatcherServlet(controllerRegistry);
+
                 applicationContext.getComponents().values().forEach(component -> {
                     if (component.getClass().isAnnotationPresent(RestController.class))
                         controllerRegistry.registerController(component.getClass().getAnnotation(RestController.class).value(), component);
                     if (component.getClass().isAnnotationPresent(Controller.class))
                         controllerRegistry.registerController(component.getClass().getAnnotation(Controller.class).value(), component);
+                    if (component.getClass().isAnnotationPresent(CORS.class)) {
+                        Security.setCorsPolicy((CORSPolicy) component);
+                    }
                 });
                 new FrontController(apiDispatcherServlet, jspDispatcherServlet);
             }
