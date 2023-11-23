@@ -230,7 +230,7 @@ public class QueryGenerator {
                     continue;
 
                 if (field.isAnnotationPresent(With.class)) {
-                    builder.append(",(").append(field.getAnnotation(With.class).value()).append(") as ").append(EntityUtils.getColumnName(field));
+                    builder.append(",(").append(field.getAnnotation(With.class).value()).append(") as ").append(EntityUtils.getColumnName(field)).append(" ");
                     continue;
                 }
 
