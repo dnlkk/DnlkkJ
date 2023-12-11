@@ -39,7 +39,7 @@ public class QueryGenerator {
         if (methodParts.length > 0) {
             if (methodParts[0].equals(QueryOperation.FIND.getValue())) {
                 query.append("SELECT ").append(tableName).append(".*");
-                query.append(getReferencesAs(references, ignoredFields));
+                query.append(getReferencesAs(references, ignoredFields, valueClass));
             } else if (methodParts[0].equals(QueryOperation.COUNT.getValue()))
                 query.append("SELECT COUNT( DISTINCT ").append(tableName).append(".").append(EntityUtils.getRelationIdFieldName(valueClass)).append(" ) ");
             else if (methodParts[0].equals(QueryOperation.SUM.getValue()))
@@ -128,7 +128,7 @@ public class QueryGenerator {
                                 " ORDER BY %s.%s%s",
                                 tableName,
                                 EntityUtils.getRelationIdFieldName(valueClass),
-                                getReferencesOrder(references, ignoredFields)
+                                getReferencesOrder(references, ignoredFields, valueClass)
                         )
                 );
 
@@ -178,7 +178,7 @@ public class QueryGenerator {
         return null;
     }
 
-    public static String getReferencesOrder(List<Field> references, List<String> ignoredFields) {
+    public static String getReferencesOrder(List<Field> references, List<String> ignoredFields, Class<?> valueClass) {
         StringBuilder builder = new StringBuilder(" ");
         Set<String> includedTableNames = new HashSet<>();
         if (!references.isEmpty()) {
@@ -201,8 +201,10 @@ public class QueryGenerator {
                     targetKey = EntityUtils.getColumnName(EntityUtils.getIdField(targetClass));
                 } else {
                     for (Field targetField : targetClass.getDeclaredFields()) {
-                        if (field.isAnnotationPresent(With.class))
-                            continue;
+                        if (targetField.isAnnotationPresent(With.class) &&
+                                Arrays.stream(targetField.getAnnotation(With.class).include()).anyMatch(includeName -> includeName.equals(valueClass.getSimpleName())))
+                            builder.append(",(").append(targetField.getAnnotation(With.class).value()).append(") as ").append(EntityUtils.getColumnName(targetField)).append(" ");
+                        else if (targetField.isAnnotationPresent(With.class)) continue;
                         if ((targetField.isAnnotationPresent(OneToOne.class) && targetField.getAnnotation(OneToOne.class).value().equals(field.getName()))
                                 || (targetField.isAnnotationPresent(ManyToOne.class) && targetField.getAnnotation(ManyToOne.class).value().equals(field.getName()))) {
                             targetKey = EntityUtils.getColumnName(targetField);
@@ -221,7 +223,7 @@ public class QueryGenerator {
         return builder.toString();
     }
 
-    public static String getReferencesAs(List<Field> references, List<String> ignoredFields) {
+    public static String getReferencesAs(List<Field> references, List<String> ignoredFields, Class<?> valueClass) {
         StringBuilder builder = new StringBuilder(" ");
         List<String> includedTableNames = new ArrayList<>();
         if (!references.isEmpty()) {
@@ -246,9 +248,11 @@ public class QueryGenerator {
                     continue;
 
                 for (Field targetField : targetClass.getDeclaredFields()) {
-                    if (targetField.isAnnotationPresent(With.class))
-                        continue;
-                    if (EntityUtils.isNotFK(targetField) || (targetField.isAnnotationPresent(OneToOne.class) && targetField.getAnnotation(OneToOne.class).value().equals(field.getName()))
+                    if (targetField.isAnnotationPresent(With.class) &&
+                            Arrays.stream(targetField.getAnnotation(With.class).include()).anyMatch(includeName -> includeName.equals(valueClass.getSimpleName())))
+                        builder.append(",(").append(targetField.getAnnotation(With.class).value()).append(") as ").append(EntityUtils.getTableName(targetField.getDeclaringClass())).append("_").append(EntityUtils.getColumnName(targetField)).append(" ");
+                    else if (targetField.isAnnotationPresent(With.class)) continue;
+                    else if (EntityUtils.isNotFK(targetField) || (targetField.isAnnotationPresent(OneToOne.class) && targetField.getAnnotation(OneToOne.class).value().equals(field.getName()))
                             || (targetField.isAnnotationPresent(ManyToOne.class) && targetField.getAnnotation(ManyToOne.class).value().equals(field.getName()))) {
                         String targetKey = EntityUtils.getColumnName(targetField);
                         if (targetKey == null)

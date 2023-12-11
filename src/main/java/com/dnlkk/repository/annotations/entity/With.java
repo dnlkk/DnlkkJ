@@ -17,4 +17,5 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface With {
     String value();
+    String[] include() default {};
 }

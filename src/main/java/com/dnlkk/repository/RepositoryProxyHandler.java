@@ -144,9 +144,11 @@ public class RepositoryProxyHandler implements InvocationHandler {
                                 DependencyInjector.setField(entity, relationEntity, field);
 
                             for (Field relationField : relationClazz.getDeclaredFields()) {
-                                if (relationField.isAnnotationPresent(With.class))
+                                if (relationField.isAnnotationPresent(With.class) &&
+                                        Arrays.stream(relationField.getAnnotation(With.class).include())
+                                                .noneMatch(includeName -> includeName.equals(valueClass.getSimpleName())))
                                     continue;
-                                if (EntityUtils.isNotRelation(relationField)) {
+                                else if (EntityUtils.isNotRelation(relationField)) {
                                     Object retrievedObject = resultSet.getObject(EntityUtils.getTableName(relationField.getDeclaringClass()) + "_" + EntityUtils.getColumnName(relationField));
                                     DependencyInjector.setField(relationEntity, retrievedObject, relationField);
                                 } else {
@@ -243,7 +245,7 @@ public class RepositoryProxyHandler implements InvocationHandler {
 
         String sql = SQLQueryUtil.removeParamsFromQuery(query.value(), queryParameters);
         if (query.autoReference()) {
-            sql = sql.replace("FROM", QueryGenerator.getReferencesAs(references, ignoredFields) + " FROM");
+            sql = sql.replace("FROM", QueryGenerator.getReferencesAs(references, ignoredFields, valueClass) + " FROM");
             sql = sql.replace("WHERE", QueryGenerator.getReferencesJoin(references, tableName, ignoredFields) + " WHERE");
         }
 
