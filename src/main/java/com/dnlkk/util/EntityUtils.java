@@ -53,7 +53,8 @@ public class EntityUtils {
             .filter(field ->
                     (isNotPK(field) || (withId && !isNotPK(field)))
                             && (isNotFK(field) || (withFk && !isNotFK(field))) && !field.isAnnotationPresent(OneToMany.class)
-                            && !field.isAnnotationPresent(Date.class))
+                            && !field.isAnnotationPresent(Date.class)
+                            && !field.isAnnotationPresent(With.class))
             .map(EntityUtils::getColumnName);
     }
 

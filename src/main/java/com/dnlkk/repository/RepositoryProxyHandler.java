@@ -398,7 +398,9 @@ public class RepositoryProxyHandler implements InvocationHandler {
                         if (id.get(i) != null)
                             continue;
                         for (Field field : fields) {
-                            if (EntityUtils.isNotPK(field) && EntityUtils.isNotFK(field) && !field.isAnnotationPresent(Date.class)) {
+                            if (EntityUtils.isNotPK(field) && EntityUtils.isNotFK(field)
+                                    && !field.isAnnotationPresent(Date.class)
+                                    && !field.isAnnotationPresent(With.class)) {
                                 field.setAccessible(true);
                                 Object fieldValue = field.get(entities.get(i));
 
@@ -446,7 +448,9 @@ public class RepositoryProxyHandler implements InvocationHandler {
                         if (id.get(i) == null)
                             continue;
                         for (Field field : fields) {
-                            if (EntityUtils.isNotFK(field) && !field.isAnnotationPresent(Date.class)) {
+                            if (EntityUtils.isNotFK(field)
+                                    && !field.isAnnotationPresent(Date.class)
+                                    && !field.isAnnotationPresent(With.class)) {
                                 field.setAccessible(true);
                                 Object fieldValue = field.get(entities.get(i));
 
